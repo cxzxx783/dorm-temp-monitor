@@ -22,7 +22,7 @@ class Api:
         self._lock = threading.Lock()
         self._window = None
         self.sensor = Sensor(device_name=DEVICE_NAME, mac=DEVICE_MAC,
-                             interval=30.0, log_dir=DATA_DIR,
+                             interval=6.0, log_dir=DATA_DIR,   # 默认6秒(用户喜欢)
                              on_event=self._on_event)
 
     def set_window(self, w):
@@ -167,7 +167,7 @@ class Api:
     def _restart_sensor(self):
         self.sensor.stop()
         self.sensor = Sensor(device_name=DEVICE_NAME, mac=DEVICE_MAC,
-                             interval=self.sensor.interval or 30.0,
+                             interval=self.sensor.interval or 6.0,
                              log_dir=DATA_DIR, on_event=self._on_event)
         self.sensor.start()
 
