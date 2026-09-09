@@ -85,14 +85,57 @@ class Api:
 
     def get_week(self):
         """近7天每日统计(含空缺天)"""
+        return self.range_days(7)
+
+    def range_days(self, n):
+        """近n天每日统计(含空缺天)"""
         today = datetime.date.today()
         out = []
-        for i in range(6, -1, -1):
+        for i in range(n - 1, -1, -1):
             d = (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
             st = hist.day_stats(hist.load_day(DATA_DIR, d))
             out.append({"day": d[5:], "avg": st["avg"] if st else None,
                         "count": st["count"] if st else 0})
         return out
+
+    def get_range(self, days, end=None):
+        """合并最近N天(止于end)的全部记录点, 供跨天曲线绘制
+        get_range(days=30) -> 近30天全部点(含今天)
+        get_range(days=30, end='2026-09-09') -> 截至指定日的近30天
+        """
+        today = datetime.date.today()
+        if end:
+            try:
+                today = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+            except Exception:
+                pass
+        start = today - datetime.timedelta(days=days - 1)
+        points = []
+        d = start
+        while d <= today:
+            day = d.strftime("%Y-%m-%d")
+            points.extend(hist.load_day(DATA_DIR, day))
+            d += datetime.timedelta(days=1)
+        return points
+
+    def get_range_stats(self, days):
+        pts = self.get_range(days)
+        return hist.day_stats(pts)
+
+    def get_between(self, start, end):
+        """自定义起止日期间的全部记录点(含首尾)"""
+        points = []
+        try:
+            d = datetime.datetime.strptime(start, "%Y-%m-%d").date()
+            e = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
+            return points
+        if d > e:
+            d, e = e, d
+        while d <= e:
+            points.extend(hist.load_day(DATA_DIR, d.strftime("%Y-%m-%d")))
+            d += datetime.timedelta(days=1)
+        return points
 
     def start(self):
         if not self.sensor.is_alive():

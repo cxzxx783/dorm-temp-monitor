@@ -4,448 +4,460 @@
 <meta charset="UTF-8">
 <title>宿舍温湿度管家</title>
 <script src="assets/echarts.min.js"></script>
+<link rel="stylesheet" href="assets/gridstack.min.css">
 <style>
 :root{
   --bg:#04060f; --text:#e8f0ff; --dim:#7d8db0; --faint:#4a5678;
-  --cyan:#22d3ee; --violet:#8b5cf6; --pink:#f472b6; --temp:#ff8a7a; --hum:#38bdf8;
+  --cyan:#22d3ee; --violet:#8b5cf6; --temp:#ff8a7a; --hum:#38bdf8;
   --ok:#34d399; --warn:#fbbf24; --err:#f87171;
-  --glass:rgba(14,20,40,.55); --line:rgba(90,140,255,.14);
+  --glass:rgba(14,20,40,.6); --line:rgba(90,140,255,.14);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",sans-serif;
-  color:var(--text); height:100vh; overflow:hidden; user-select:none;
+html,body{height:100%}
+body{font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
+  color:var(--text); overflow:hidden; user-select:none;
   background:
     radial-gradient(1100px 600px at 85% -10%, rgba(34,211,238,.10), transparent 55%),
     radial-gradient(900px 520px at -5% 110%, rgba(139,92,246,.12), transparent 55%),
-    linear-gradient(170deg,#050914 0%, #04060f 60%, #070a18 100%);
-}
-/* 星点背景 */
+    linear-gradient(170deg,#050914 0%, #04060f 60%, #070a18 100%);}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   background-image:
     radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7), transparent),
-    radial-gradient(1px 1px at 28% 68%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1.5px 1.5px at 43% 12%, rgba(150,200,255,.8), transparent),
+    radial-gradient(1.2px 1.2px at 43% 12%, rgba(150,200,255,.8), transparent),
     radial-gradient(1px 1px at 61% 44%, rgba(255,255,255,.6), transparent),
-    radial-gradient(1.2px 1.2px at 74% 82%, rgba(200,220,255,.7), transparent),
-    radial-gradient(1px 1px at 88% 25%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 34% 88%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 74% 82%, rgba(200,220,255,.7), transparent),
     radial-gradient(1.5px 1.5px at 92% 62%, rgba(140,180,255,.6), transparent),
-    radial-gradient(1px 1px at 8% 78%, rgba(255,255,255,.4), transparent);
-  animation:twinkle 6s ease-in-out infinite alternate;}
+    radial-gradient(1px 1px at 34% 88%, rgba(255,255,255,.4), transparent);
+  animation:twinkle 6s ease-in-out infinite alternate}
 @keyframes twinkle{from{opacity:.55}to{opacity:1}}
-.wrap{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:16px 20px;gap:12px}
+.app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:12px 16px;gap:9px}
+.scanline{position:absolute;left:0;right:0;height:1px;top:0;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}
 
-/* ===== 光环装饰线 ===== */
-.scanline{position:absolute;left:0;right:0;height:1px;top:0;
-  background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}
-.topbar{position:relative;display:flex;align-items:center;gap:14px;
-  background:var(--glass);border:1px solid var(--line);border-radius:16px;
-  padding:12px 18px;backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05)}
-.logo{position:relative;width:40px;height:40px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;
-  background:linear-gradient(135deg,rgba(34,211,238,.9),rgba(139,92,246,.9));
-  box-shadow:0 0 22px rgba(34,211,238,.45),0 0 44px rgba(139,92,246,.25)}
-.logo::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(120deg,rgba(255,255,255,.3),transparent 45%)}
-.titles .name{font-size:16px;font-weight:700;letter-spacing:1.5px;
-  background:linear-gradient(90deg,#fff,#9fd8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.titles .sub{font-size:11px;color:var(--faint);margin-top:2px;letter-spacing:.5px}
-.right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.clock{text-align:right}.clock .now{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:1px}
+/* ===== 顶栏 ===== */
+.topbar{position:relative;display:flex;align-items:center;gap:14px;background:var(--glass);
+  border:1px solid var(--line);border-radius:14px;padding:9px 18px;backdrop-filter:blur(16px);
+  box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.logo{width:38px;height:38px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:19px;background:linear-gradient(135deg,rgba(34,211,238,.9),rgba(139,92,246,.9));box-shadow:0 0 22px rgba(34,211,238,.45)}
+.titles .name{font-size:16px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,#fff,#9fd8ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.titles .sub{font-size:11px;color:var(--faint);margin-top:2px}
+.right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.clock{text-align:right}.clock .now{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
 .clock .date{font-size:10.5px;color:var(--faint);margin-top:1px}
-.status{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:12.5px;
+.status{display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;font-size:12px;
   background:rgba(8,12,26,.6);border:1px solid var(--line)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.3s}
-.dot.waiting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15),0 0 18px rgba(251,191,36,.5);animation:pulse 1.2s infinite}
-.dot.connecting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15),0 0 18px rgba(251,191,36,.5);animation:pulse .7s infinite}
-.dot.connected{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.15),0 0 20px rgba(52,211,153,.65)}
-.dot.reconnecting{background:var(--err);box-shadow:0 0 0 4px rgba(248,113,113,.15),0 0 18px rgba(248,113,113,.5);animation:pulse 1s infinite}
+.dot.waiting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15);animation:pulse 1.2s infinite}
+.dot.connecting{background:var(--warn);animation:pulse .7s infinite}
+.dot.connected{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.15),0 0 20px rgba(52,211,153,.6)}
+.dot.reconnecting{background:var(--err);box-shadow:0 0 0 4px rgba(248,113,113,.15);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ===== 日期切换 ===== */
-.days{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none}
-.daybtn{flex:none;padding:7px 16px;border-radius:11px;font-size:12.5px;cursor:pointer;transition:.18s;
+/* ===== 控制条 ===== */
+.ctrlbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rangebtn{padding:6px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;transition:.18s;
   background:rgba(10,16,32,.55);border:1px solid var(--line);color:var(--dim)}
-.daybtn:hover{border-color:var(--cyan);color:var(--text)}
-.daybtn.on{background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(139,92,246,.22));
-  border-color:rgba(34,211,238,.55);color:#fff;box-shadow:0 0 16px rgba(34,211,238,.22)}
-.metachips{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-.chip{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:9px;
-  background:rgba(10,16,32,.5);border:1px solid var(--line);color:var(--dim)}
-.chip b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
-.chip .tt{color:var(--faint)}
+.rangebtn:hover{border-color:var(--cyan);color:#fff}
+.rangebtn.on{background:linear-gradient(135deg,rgba(34,211,238,.25),rgba(139,92,246,.25));
+  border-color:rgba(34,211,238,.55);color:#fff;box-shadow:0 0 16px rgba(34,211,238,.25)}
+.ctrlabel{font-size:11.5px;color:var(--faint);letter-spacing:1px}
+.custrange{display:flex;align-items:center;gap:6px}
+.custrange.hidden{display:none}
+input[type=date]{background:rgba(8,12,26,.65);color:var(--text);border:1px solid var(--line);
+  border-radius:8px;padding:4px 7px;font-size:11.5px;outline:none;font-family:inherit;color-scheme:dark}
+button{background:rgba(8,12,26,.65);color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:4px 11px;font-size:11.5px;outline:none;cursor:pointer;transition:.18s;font-family:inherit}
+button:hover{border-color:var(--cyan)}
+select{background:rgba(8,12,26,.65);color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:4px 8px;font-size:11.5px;outline:none;font-family:inherit}
+.sp2{flex:1}
+.miniinfo{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
 
-/* ===== 主数据 ===== */
-.hero{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;flex:none}
-.panel{background:var(--glass);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(16px);
-  box-shadow:0 8px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04)}
-.big{position:relative;overflow:hidden;padding:16px 26px;display:flex;align-items:center;gap:28px}
-.big .glow{position:absolute;width:300px;height:300px;border-radius:50%;top:-120px;right:-80px;pointer-events:none;
-  background:radial-gradient(circle,rgba(255,138,122,.14),transparent 62%)}
-.tcell .lb{font-size:11px;color:var(--faint);letter-spacing:2px;margin-bottom:6px}
-.tcell .bigv{display:flex;align-items:baseline;gap:6px}
-.tcell .bigv .v{font-size:58px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:1px;
-  text-shadow:0 0 30px rgba(255,138,122,.35)}
-.tcell .bigv .u{font-size:20px;color:var(--dim)}
-.comfy{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px}
-.comfy .face{font-size:26px}
-.verttable{display:flex;flex-direction:column;gap:7px;min-width:150px}
-.vrow{display:flex;align-items:baseline;gap:10px}
-.vrow .vl{font-size:11.5px;color:var(--faint);width:52px}
-.vrow .vv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
-.vrow .vu{font-size:11px;color:var(--dim)}
-.vrow.hum .vv{color:var(--hum)}.vrow.volt .vv{color:var(--violet)}
-.vrow.uptime .vv{color:var(--ok)}
-.sig{display:flex;align-items:center;gap:3px}
-.sig i{width:3.5px;border-radius:2px;background:rgba(255,255,255,.12);display:inline-block}
-.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:10px}.sig i:nth-child(3){height:14px}.sig i:nth-child(4){height:18px}
+/* ===== gridstack ===== */
+.main{flex:1;min-height:0;position:relative}
+#grid{width:100%;height:100%}
+#grid .grid-stack-item-content{background:var(--glass);border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.35);overflow:hidden;cursor:grab}
+#grid .grid-stack-item-content:hover{border-color:rgba(34,211,238,.35);box-shadow:0 0 22px rgba(34,211,238,.15)}
+#grid.locked .grid-stack-item-content{cursor:default}
+.wd-inner{position:absolute;inset:0;padding:10px 12px}
+.wd-title{font-size:10px;color:var(--faint);letter-spacing:1.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.wd-title .bar{width:3px;height:11px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.7)}
+
+/* 温度主卡 */
+.tempcard{display:flex;align-items:center;justify-content:center;gap:16px;height:100%;position:relative}
+.tempcard .glow{position:absolute;width:200px;height:200px;border-radius:50%;top:-100px;right:-60px;
+  background:radial-gradient(circle,rgba(255,138,122,.16),transparent 62%)}
+.tempnum{font-size:44px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:1px;
+  text-shadow:0 0 28px rgba(255,138,122,.35)}
+.tempunit{font-size:16px;color:var(--dim);margin-left:3px}
+.face{font-size:30px;text-align:center}
+.comfytxt{font-size:10px;color:var(--dim);text-align:center;margin-top:4px}
+
+/* 单元格数据 */
+.cells{display:flex;flex-direction:column;gap:4px;width:100%}
+.cellrow{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+.cellrow .cl{color:var(--faint)}
+.cellrow .cv{font-weight:600;font-variant-numeric:tabular-nums}
+.cv.high{color:var(--temp)}.cv.mid{color:var(--hum)}.cv.low{color:var(--ok)}
+.sigholder{display:flex;align-items:center;gap:6px}
+.sig{display:flex;align-items:flex-end;gap:2.5px}
+.sig i{width:3px;border-radius:2px;background:rgba(255,255,255,.12);display:inline-block}
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:9px}.sig i:nth-child(3){height:12px}.sig i:nth-child(4){height:16px}
 .sig.l1 i:nth-child(1){background:var(--err)}
 .sig.l2 i:nth-child(-n+2){background:var(--warn)}
 .sig.l3 i{background:var(--cyan)}
 .sig.l4 i{background:var(--ok);box-shadow:0 0 8px rgba(52,211,153,.6)}
+.sigtext{font-size:10px;color:var(--dim)}
 
-.sidegrid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px}
-.cell{padding:13px 18px;display:flex;flex-direction:column;justify-content:center}
-.cell .lb{font-size:10.5px;color:var(--faint);letter-spacing:1px}
-.cell .mainv{margin-top:6px;font-size:23px;font-weight:600;font-variant-numeric:tabular-nums}
-.cell .mainv small{font-size:12px;color:var(--dim);font-weight:500}
-.cell .subv{margin-top:4px;font-size:10.5px;color:var(--faint)}
-.subchips{display:flex;gap:6px;margin-top:8px}
-.subchips span{font-size:10.5px;padding:2px 8px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--dim)}
-.subchips b{color:var(--text)}
+/* 统计 */
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:calc(100% - 20px)}
+.statcell{display:flex;flex-direction:column;justify-content:center;padding:4px 10px;
+  background:rgba(8,12,26,.4);border:1px solid var(--line);border-radius:10px}
+.statcell .sl{font-size:10px;color:var(--faint)}
+.statcell .sv{margin-top:3px;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.statcell .ss{margin-top:1px;font-size:9.5px;color:var(--faint)}
 
-/* ===== 图表 ===== */
-.chartpanel{flex:1;min-height:0;display:flex;flex-direction:column;padding:8px 6px 2px;position:relative}
-.charthead{display:flex;align-items:center;padding:4px 14px 0}
-.charthead .tt{font-size:12.5px;font-weight:600;letter-spacing:1px;color:var(--dim)}
-.charthead .tt em{font-style:normal;color:var(--faint)}
-.seg{display:flex;gap:14px}
-.seg i{font-style:normal;font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px}
-.seg i::before{content:"";width:16px;height:3px;border-radius:2px}
-.seg .t::before{background:var(--temp);box-shadow:0 0 8px rgba(255,138,122,.7)}
-.seg .h::before{background:var(--hum);box-shadow:0 0 8px rgba(56,189,248,.6)}
-#chart{flex:1;min-height:0}
+/* 图表 */
+.chartbox{position:absolute;top:22px;left:8px;right:8px;bottom:6px}
 
-/* 周概览 */
-.weekrow{display:grid;grid-template-columns:.9fr 50px 1.6fr;gap:12px;align-items:stretch}
-.weeknote{display:flex;flex-direction:column;justify-content:center;padding:10px 20px}
-.weeknote .tt{font-size:11px;color:var(--faint);letter-spacing:1px}
-.weeknote .v{margin-top:5px;font-size:20px;font-weight:600;color:var(--ok)}
-.weeknote .s{font-size:10.5px;color:var(--faint);margin-top:3px}
-.weekmini{height:64px;padding:4px 10px}
-
-/* 底部 */
-.footbar{display:flex;align-items:center;gap:12px;padding:10px 18px;flex-wrap:wrap}
-.ft{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
-select,button{background:rgba(8,12,26,.65);color:var(--text);border:1px solid var(--line);
-  border-radius:9px;padding:6px 12px;font-size:12px;outline:none;cursor:pointer;transition:.18s;font-family:inherit}
-select:hover,button:hover{border-color:var(--cyan)}
-.sp2{flex:1}
-.csvpath{font-size:10.5px;color:var(--faint);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 布局操作 */
+.layop{position:fixed;bottom:16px;right:16px;z-index:60;display:flex;gap:8px}
+.layop button{font-size:11px;padding:6px 12px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.csvpath{font-size:10px;color:var(--faint);max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
   <div class="scanline"></div>
 
-  <!-- 顶栏 -->
   <div class="topbar">
     <div class="logo">🌡️</div>
-    <div class="titles">
-      <div class="name">宿舍温湿度管家</div>
-      <div class="sub">Xiaomi Temp&Humidity Monitor 3 mini</div>
-    </div>
+    <div class="titles"><div class="name">宿舍温湿度管家</div><div class="sub">Xiaomi THM 3 mini · 免网关</div></div>
     <div class="right">
       <div class="clock"><div class="now" id="clock">--:--:--</div><div class="date" id="date">----</div></div>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">启动中…</span></div>
     </div>
   </div>
 
-  <!-- 日期 + 指标 -->
-  <div class="days" id="daysBar"></div>
-
-  <!-- 主数据 -->
-  <div class="hero">
-    <div class="panel big">
-      <div class="glow"></div>
-      <div class="tcell">
-        <div class="lb">室 温</div>
-        <div class="bigv"><span class="v" id="curTemp">--</span><span class="u">℃</span></div>
-        <div class="comfy"><span class="face" id="face">😐</span><span id="comfyText">等待数据…</span></div>
-      </div>
-      <div class="verttable">
-        <div class="vrow hum"><span class="vl">湿度</span><span class="vv" id="curHum">--</span><span class="vu">%</span></div>
-        <div class="vrow volt"><span class="vl">电压</span><span class="vv" id="curVolt">--</span><span class="vu">V</span></div>
-        <div class="vrow uptime"><span class="vl">连续</span><span class="vv" id="uptime">--</span></div>
-        <div class="vrow"><span class="vl">信号</span><span class="sig" id="sigbar"></span><span id="sigText" style="font-size:11px;color:var(--dim)">--</span></div>
-        <div class="vrow"><span class="vl">延迟</span><span class="vv" id="latency" style="font-size:14px">--</span><span class="vu">ms</span></div>
-      </div>
-    </div>
-
-    <div class="sidegrid">
-      <div class="panel cell">
-        <div class="lb">今日温度 · 高/低</div>
-        <div class="mainv"><span id="ttHigh">--</span><small> ℃</small></div>
-        <div class="subv">最高 <b id="ttHighAt" style="color:var(--temp)">--</b> · 最低 <b id="ttLowAt" style="color:var(--hum)">--</b></div>
-      </div>
-      <div class="panel cell">
-        <div class="lb">今日湿度 · 区间</div>
-        <div class="mainv"><span id="hhRange" style="color:var(--hum)">--</span><small> %</small></div>
-        <div class="subv">平均 <b id="hhAvg">--</b>% · 极差 <b id="hhDiff">--</b>%</div>
-      </div>
-      <div class="panel cell">
-        <div class="lb">本日采集</div>
-        <div class="mainv"><span id="dayCount">0</span><small> 条</small></div>
-        <div class="subv" id="dayCountNote">等待数据</div>
-      </div>
-      <div class="panel cell">
-        <div class="lb">温度 平均</div>
-        <div class="mainv"><span id="ttAvg">--</span><small> ℃</small></div>
-        <div class="subv">本次运行 <b id="runCount">0</b> 条 · 掉线找回 <b id="lostCount">0</b> 次</div>
-      </div>
-    </div>
+  <div class="ctrlbar">
+    <span class="ctrlabel">时间范围</span>
+    <span class="rangebtn on" data-r="1" onclick="setRange(this)">近24小时</span>
+    <span class="rangebtn" data-r="7" onclick="setRange(this)">近7天</span>
+    <span class="rangebtn" data-r="30" onclick="setRange(this)">近30天</span>
+    <span class="rangebtn" data-r="0" onclick="setRange(this)">自定义</span>
+    <span class="custrange hidden" id="custWrap">
+      <input type="date" id="d1"><input type="date" id="d2"><button onclick="applyCustom()">应用</button>
+    </span>
+    <span class="sp2"></span>
+    <span class="miniinfo" id="rangeInfo">-</span>
+    <span class="ctrlabel">采样</span>
+    <select id="intervalSel">
+      <option value="6">6s</option><option value="15">15s</option>
+      <option value="30" selected>30s</option><option value="60">60s</option><option value="300">5min</option>
+    </select>
+    <button onclick="rescan()">↻ 重连</button>
+    <span class="csvpath" id="csvPath">数据保存在data/</span>
   </div>
 
-  <!-- 主图 -->
-  <div class="panel chartpanel">
-    <div class="charthead">
-      <span class="tt">实时趋势 <em id="chartDay">-</em></span>
-      <span class="seg" style="margin-left:auto"><i class="t">温度</i><i class="h">湿度</i></span>
-    </div>
-    <div id="chart"></div>
-  </div>
+  <div class="main">
+    <div class="grid-stack" id="grid">
 
-  <!-- 近7天 -->
-  <div class="weekrow">
-    <div class="panel weeknote">
-      <div class="tt">近7天日均温</div>
-      <div class="v" id="weekAvg">--</div>
-      <div class="s" id="weekNote">数据积累中…</div>
-    </div>
-    <div class="panel" style="background:linear-gradient(135deg,rgba(34,211,238,.12),rgba(139,92,246,.12))"></div>
-    <div class="panel chartpanel" style="min-height:0">
-      <div id="weekChart" class="weekmini"></div>
-    </div>
-  </div>
+      <!-- 温度主卡 -->
+      <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="3" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner tempcard">
+            <div class="glow"></div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:var(--faint);letter-spacing:2px;margin-bottom:6px">室 温</div>
+              <span class="tempnum" id="tcTemp">--</span><span class="tempunit">℃</span>
+            </div>
+            <div>
+              <div class="face" id="tcFace">😐</div>
+              <div class="comfytxt" id="tcComfy">等待数据…</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <!-- 底部 -->
-  <div class="panel footbar">
-    <div class="ft">采样
-      <select id="intervalSel">
-        <option value="6">6 秒</option><option value="15">15 秒</option>
-        <option value="30" selected>30 秒（推荐）</option>
-        <option value="60">60 秒</option><option value="300">5 分钟</option>
-      </select>
+      <!-- 实时明细 -->
+      <div class="grid-stack-item" gs-x="3" gs-y="0" gs-w="3" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner">
+            <div class="wd-title"><span class="bar"></span>实时明细</div>
+            <div class="cells">
+              <div class="cellrow"><span class="cl">湿度</span><span class="cv mid" id="lcHum">--</span><span style="font-size:10px;color:var(--faint)">%</span></div>
+              <div class="cellrow"><span class="cl">电压 <span id="battTag" style="font-size:9px"></span></span><span class="cv low" id="lcVolt">--</span><span style="font-size:10px;color:var(--faint)">V</span></div>
+              <div class="cellrow"><span class="cl">连续</span><span class="cv high" id="lcUp">--</span></div>
+              <div class="cellrow"><span class="cl">信号</span><span class="cv"><span class="sigholder"><span class="sig" id="lcSig"><i></i><i></i><i></i><i></i></span><span class="sigtext" id="lcSigT">--</span></span></span></div>
+              <div class="cellrow"><span class="cl">延迟</span><span class="cv low" id="lcMs">--</span><span style="font-size:10px;color:var(--faint)">ms</span></div>
+              <div class="cellrow"><span class="cl">今日采集</span><span class="cv" id="tcDayN">0</span><span style="font-size:10px;color:var(--faint)">条</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主趋势图 -->
+      <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner">
+            <div class="wd-title"><span class="bar"></span>温度·湿度趋势 <span id="chTitle" style="color:var(--dim)"></span></div>
+            <div class="chartbox" id="mainChart"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 范围统计 -->
+      <div class="grid-stack-item" gs-x="0" gs-y="3" gs-w="4" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner">
+            <div class="wd-title"><span class="bar"></span>所选范围统计</div>
+            <div class="statgrid">
+              <div class="statcell"><span class="sl">平均温度</span><span class="sv" id="stAvg" style="color:var(--temp)">--</span><span class="ss">℃</span></div>
+              <div class="statcell"><span class="sl">温度极差</span><span class="sv" id="stRange">--</span><span class="ss">℃</span></div>
+              <div class="statcell"><span class="sl">平均湿度</span><span class="sv" id="stHavg" style="color:var(--hum)">--</span><span class="ss">%</span></div>
+              <div class="statcell"><span class="sl">湿度极差</span><span class="sv" id="stHdiff">--</span><span class="ss">%</span></div>
+              <div class="statcell"><span class="sl">最高·时刻</span><span class="sv" id="stMax" style="color:var(--temp)">--</span><span class="ss" id="stMaxAt">℃</span></div>
+              <div class="statcell"><span class="sl">最低·时刻</span><span class="sv" id="stMin" style="color:var(--hum)">--</span><span class="ss" id="stMinAt">℃</span></div>
+              <div class="statcell"><span class="sl">样本数</span><span class="sv" id="stN">--</span><span class="ss">条</span></div>
+              <div class="statcell"><span class="sl">活跃天数</span><span class="sv" id="stDays">--</span><span class="ss">天</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近7天 -->
+      <div class="grid-stack-item" gs-x="4" gs-y="3" gs-w="4" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner">
+            <div class="wd-title"><span class="bar"></span>近7天日均温</div>
+            <div class="chartbox" id="week7Chart"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近30天 -->
+      <div class="grid-stack-item" gs-x="8" gs-y="3" gs-w="4" gs-h="3">
+        <div class="grid-stack-item-content">
+          <div class="wd-inner">
+            <div class="wd-title"><span class="bar"></span>近30天日均温</div>
+            <div class="chartbox" id="monthChart"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <button onclick="rescan()">↻ 重新连接</button>
-    <div class="sp2"></div>
-    <div class="csvpath" id="csvPath">数据保存在 exe 旁 data/ 文件夹</div>
   </div>
 </div>
 
+<div class="layop">
+  <button onclick="toggleEdit()" id="editBtn">✥ 编辑布局</button>
+  <button onclick="resetGrid()">↩ 恢复默认</button>
+</div>
+
+<script src="assets/gridstack-all.js"></script>
 <script>
-var chart = echarts.init(document.getElementById('chart'));
-var weekChart = echarts.init(document.getElementById('weekChart'));
-var firstRun = true;
-var CUR_DAY = null;          // 当前选中日期
-var DAY_POINTS = [];         // 选中日期的历史点
-var REFRESHING = false;
+var grid = null, curRange = 1, custStart = null, custEnd = null, firstRun = true;
+var EC = {};
 
 function p(n){return n<10?'0'+n:n}
 function fmtClock(sec){var d=new Date(sec*1000);return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
-function fmtDur(sec){if(sec==null)return'--';var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);
-  return h>0?h+'h '+p(m)+'m':p(m)+'m'+p(sec%60)+'s'}
-function fmtDay(day){var d=new Date(day+'T00:00');return d.getMonth()+1+'/'+d.getDate()}
-function statusMap(s){return{idle:'待机',waiting:'寻找设备…',found:'已找到，连接中…',connecting:'连接中…',
-  connected:'连接稳定 · 采集中',reconnecting:'掉线 · 自动找回中…',session_end:'会话结束',disconnected:'已断开'}[s]||s||'未知'}
-function dotType(s){if(s==='connected')return'connected';
-  if(s==='waiting'||s==='found'||s==='connecting')return'connecting';return'reconnecting'}
+function fmtDay2(d){return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+function statusMap(s){return{idle:'待机',waiting:'寻找设备…',found:'连接中…',connecting:'连接中…',
+  connected:'连接稳定 · 采集中',reconnecting:'掉线 · 自动找回…'}[s]||s||'未知'}
+function dotType(s){if(s==='connected')return'connected';if(s==='waiting'||s==='found'||s==='connecting')return'connecting';return'reconnecting'}
+function setV(id,v){var e=document.getElementById(id);if(e)e.textContent=v}
 
-function renderChart(points){
-  var times=points.map(x=>fmtClock(x.t)), temps=points.map(x=>x.temp), hums=points.map(x=>x.hum);
-  chart.setOption({
+/* ============ gridstack 布局 ============ */
+function buildGrid(){
+  grid = GridStack.init({
+    fromElement: true, column: 12, cellHeight: 42, margin: 6, float: true,
+    animate: true, alwaysShowResizeHandle: true
+  }, document.getElementById('grid'));
+  var saved = null;
+  try{ saved = JSON.parse(localStorage.getItem('thm_layout_v1')); }catch(e){}
+  if(saved && saved.length){ try{ grid.load(saved); }catch(e){} }
+  grid.on('change', function(){
+    try{ localStorage.setItem('thm_layout_v1', JSON.stringify(grid.save(false))); }catch(e){}
+    Object.keys(EC).forEach(function(k){ try{EC[k].resize()}catch(e){} });
+  });
+  grid.enableMove(false); grid.enableResize(false);
+  document.getElementById('grid').classList.add('locked');
+  setTimeout(initCharts, 400);
+}
+function toggleEdit(){
+  var editing = grid.opts.disableDrag === true;
+  grid.enableMove(editing); grid.enableResize(editing);
+  document.getElementById('grid').classList.toggle('locked', !editing);
+  document.getElementById('editBtn').textContent = editing ? '✅ 正在拖动… 点我完成' : '✥ 编辑布局';
+  if(editing) setTimeout(function(){ document.getElementById('editBtn').textContent='✥ 编辑布局'; }, 2500);
+}
+function resetGrid(){
+  localStorage.removeItem('thm_layout_v1');
+  grid.removeAll(); initCharts();
+}
+function initCharts(){
+  ['mainChart','week7Chart','monthChart'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(EC[id]){ EC[id].dispose(); }
+    EC[id] = echarts.init(el);
+  });
+  refreshAll();
+}
+
+/* ============ 时间范围 ============ */
+function setRange(el){
+  document.querySelectorAll('.rangebtn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  curRange = parseInt(el.dataset.r);
+  if(curRange===0){ document.getElementById('custWrap').classList.remove('hidden'); }
+  else { document.getElementById('custWrap').classList.add('hidden'); custStart=null; custEnd=null; }
+  refreshAll();
+}
+async function applyCustom(){
+  var a = document.getElementById('d1').value, b = document.getElementById('d2').value;
+  if(!a||!b) return;
+  if(a>b){ var t=a; a=b; b=t; }
+  custStart = a; custEnd = b;
+  document.querySelectorAll('.rangebtn').forEach(x=>x.classList.remove('on'));
+  document.querySelector('.rangebtn[data-r="0"]').classList.add('on');
+  refreshAll();
+}
+async function fetchSel(){
+  if(custStart && custEnd) return await pywebview.api.get_between(custStart, custEnd);
+  return await pywebview.api.get_range(curRange);
+}
+function refreshAll(){
+  drawMain(); drawRangeStats();
+  drawWeek('week7Chart', 7); drawWeek('monthChart', 30);
+}
+
+/* ============ 绘图 ============ */
+async function drawMain(){
+  var pts = await fetchSel();
+  document.getElementById('chTitle').textContent =
+    (custStart&&custEnd) ? custStart+' ~ '+custEnd : ('近'+(curRange===1?24+'小时':curRange+'天'));
+  var ec = EC.mainChart; if(!ec) return;
+  ec.setOption({
     backgroundColor:'transparent', animation:firstRun,
-    grid:{left:44,right:48,top:16,bottom:22},
+    grid:{left:38,right:44,top:12,bottom:22},
     tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(34,211,238,.3)',
-      textStyle:{color:'#e8f0ff',fontSize:12},
-      formatter:function(ps){var h=ps[0]||ps[1];if(!h)return'';
-        var d=new Date(h.axisValue*1000||h.name+'.000'); // 容错
-        var t=ps.find(s=>s.seriesName==='温度'),u=ps.find(s=>s.seriesName==='湿度');
-        var out='<b style="color:#9fd8ff">'+(t&&t.name||'')+'</b>';
-        if(t)out+='<br>🌡 温度 <b style="color:#ff8a7a">'+t.value+'</b> ℃';
-        if(u)out+='<br>💧 湿度 <b style="color:#38bdf8">'+u.value+'</b> %';
-        return out;}},
-    legend:{data:['温度','湿度'],top:0,right:4,itemWidth:14,itemHeight:3,textStyle:{color:'#7d8db0',fontSize:11}},
-    xAxis:{type:'category',data:times,boundaryGap:false,
-      axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#4a5678',fontSize:10.5},axisTick:{show:false}},
+      textStyle:{color:'#e8f0ff',fontSize:11}},
+    legend:{data:['温度','湿度'],top:0,right:4,itemWidth:12,itemHeight:3,textStyle:{color:'#7d8db0',fontSize:10}},
+    xAxis:{type:'category',data:pts.map(x=>fmtClock(x.t)),boundaryGap:false,
+      axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#4a5678',fontSize:9},axisTick:{show:false}},
     yAxis:[
-      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},scale:true,
-        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10.5}},
-      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:0,max:100,
-        splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:10.5}}
+      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:9},scale:true,
+        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:9}},
+      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:9},min:0,max:100,
+        splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:9}}
     ],
     series:[
-      {name:'温度',type:'line',data:temps,yAxisIndex:0,smooth:true,symbol:'circle',symbolSize:3,
-        lineStyle:{width:2.4,color:'#ff8a7a',shadowBlur:12,shadowColor:'rgba(255,138,122,.5)'},
+      {name:'温度',type:'line',data:pts.map(x=>x.temp),yAxisIndex:0,smooth:true,symbol:'none',
+        lineStyle:{width:2.2,color:'#ff8a7a',shadowBlur:10,shadowColor:'rgba(255,138,122,.45)'},
         itemStyle:{color:'#ff8a7a'},
         areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
-          {offset:0,color:'rgba(255,138,122,.22)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
-      {name:'湿度',type:'line',data:hums,yAxisIndex:1,smooth:true,symbol:'none',
-        lineStyle:{width:1.6,color:'#38bdf8',shadowBlur:8,shadowColor:'rgba(56,189,248,.4)'},
-        itemStyle:{color:'#38bdf8'}}
+          {offset:0,color:'rgba(255,138,122,.2)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
+      {name:'湿度',type:'line',data:pts.map(x=>x.hum),yAxisIndex:1,smooth:true,symbol:'none',
+        lineStyle:{width:1.4,color:'#38bdf8',shadowBlur:6,shadowColor:'rgba(56,189,248,.4)'},itemStyle:{color:'#38bdf8'}}
     ]
-  },true);
-  firstRun=false;
+  },true); firstRun=false;
+}
+async function drawRangeStats(){
+  var pts = await fetchSel();
+  if(!pts.length){ document.getElementById('rangeInfo').textContent='所选范围无数据'; return; }
+  var temps = pts.map(x=>x.temp), hums = pts.map(x=>x.hum);
+  var avg = temps.reduce((a,b)=>a+b,0)/temps.length;
+  var havg = hums.reduce((a,b)=>a+b,0)/hums.length;
+  var tmax = Math.max(...temps), tmin = Math.min(...temps);
+  var imax = temps.indexOf(tmax), imin = temps.indexOf(tmin);
+  var hmax = Math.max(...hums), hmin = Math.min(...hums);
+  var days = {};
+  pts.forEach(x=>{ var d=new Date(x.t); days[p(d.getFullYear())+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())]=1; });
+  setV('stAvg', avg.toFixed(1)||'--'); setV('stRange', (tmax-tmin).toFixed(1));
+  setV('stHavg', havg.toFixed(1)); setV('stHdiff', (hmax-hmin).toFixed(1));
+  setV('stMax', tmax.toFixed(1)); setV('stMaxAt', fmtClock(pts[imax].t));
+  setV('stMin', tmin.toFixed(1)); setV('stMinAt', fmtClock(pts[imin].t));
+  setV('stN', pts.length); setV('stDays', Object.keys(days).length);
+  document.getElementById('rangeInfo').textContent =
+    (custStart&&custEnd ? custStart+'~'+custEnd : '近'+(curRange===1?24+'h':curRange+'天'))+' · '+pts.length+'样本';
+}
+function drawWeek(target, n){
+  var ec = EC[target]; if(!ec) return;
+  pywebview.api.range_days(n).then(function(week){
+    ec.setOption({
+      backgroundColor:'transparent',animation:true,grid:{left:30,right:8,top:12,bottom:20},
+      xAxis:{type:'category',data:week.map(d=>d.day.replace(/^0/,'').replace('-','/')),
+        axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#4a5678',fontSize:8.5},axisTick:{show:false}},
+      yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:8}},
+      tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
+        textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){var d=week[ps[0].dataIndex];
+          return d.day+' 日均 <b style="color:#34d399">'+(d.avg!=null?d.avg:'无')+'</b> ℃（'+d.count+'条）'}},
+      series:[{type:'bar',data:week.map(d=>d.avg),barWidth:'50%',itemStyle:{borderRadius:[4,4,0,0],
+        color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
+          {offset:0,color:'rgba(52,211,153,.9)'},{offset:1,color:'rgba(34,211,238,.2)'}]}}}]
+    },true);
+  });
 }
 
-function renderWeek(data){
-  weekChart.setOption({
-    backgroundColor:'transparent',animation:true,grid:{left:30,right:6,top:10,bottom:22},
-    xAxis:{type:'category',data:data.map(d=>d.day.slice(5)).map(d=>d.replace(/^0/,'')),
-      axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#4a5678',fontSize:9.5},axisTick:{show:false}},
-    yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:9}},
-    tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
-      textStyle:{color:'#e8f0ff',fontSize:11},
-      formatter:function(ps){var d=data[ps[0].dataIndex];if(!d)return'';
-        return d.day+' 日均 <b style="color:#34d399">'+(d.avg!=null?d.avg:'无数据')+'</b> ℃（'+d.count+'条）'}},
-    series:[{type:'bar',data:data.map(d=>d.avg),barWidth:'55%',itemStyle:{borderRadius:[5,5,0,0],
-      color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
-        {offset:0,color:'rgba(52,211,153,.9)'},{offset:1,color:'rgba(34,211,238,.25)'}]}}}]},true);
-  var avgs=data.filter(d=>d.avg!=null).map(d=>d.avg);
-  if(avgs.length){var a=avgs.reduce((x,y)=>x+y,0)/avgs.length;
-    document.getElementById('weekAvg').textContent=a.toFixed(1)+' ℃';
-    document.getElementById('weekNote').textContent=avgs.length+'天有记录 · 共'+data.reduce((x,d)=>x+d.count,0)+'条'}
-}
-
-function mergeLive(points){
-  if(CUR_DAY!==(window.TODAY)) return points;   // 只看历史日时不加实时
-  var live=window.LIVE||[];
-  if(!live.length) return points;
-  var map={}; var out=points.slice();
-  var lastT = out.length? out[out.length-1].t : 0;
-  live.forEach(x=>{ if(x.t>lastT) out.push(x); });
-  return out;
-}
-
-async function loadDay(day){
-  CUR_DAY=day;
-  document.getElementById('chartDay').textContent=day;
-  DAY_POINTS=await pywebview.api.get_day(day);
-  var stats=await pywebview.api.get_day_stats(day);
-  renderDayStats(stats);
-  renderChart(mergeLive(DAY_POINTS));
-}
-
-function renderDayStats(st){
-  var e=function(id,v){document.getElementById(id).textContent=v};
-  if(!st){e('ttHigh','--');e('ttHighAt','--');e('ttLowAt','--');e('hhRange','--');
-    e('hhAvg','--');e('hhDiff','--');e('dayCount','0');e('dayCountNote','今日暂无记录');return}
-  e('ttHigh',st.tmax); e('ttHighAt',st.tmax_at); e('ttLowAt',st.tmin_at);
-  e('hhRange',(st.hmax)+'–'+(st.hmin)); e('hhAvg',st.havg); e('hhDiff',(st.hmax-st.hmin).toFixed(1));
-  e('dayCount',st.count); e('dayCountNote','含实时 · '+st.count+'条记录');
-  document.getElementById('ttAvg').textContent=st.avg;
-}
-
-function renderLive(sn){
-  document.getElementById('dot').className='dot '+dotType(sn.status);
-  document.getElementById('statusText').textContent=statusMap(sn.status);
-  if(sn.last){
-    var l=sn.last;
-    document.getElementById('curTemp').textContent=l.temp.toFixed(1);
-    document.getElementById('curHum').textContent=l.hum;
-    document.getElementById('curVolt').textContent=l.volt.toFixed(2);
-    // 舒适度
-    var f,txt;
-    if(l.temp>=18&&l.temp<=26&&l.hum>=40&&l.hum<=65){f='😊';txt='舒适惬意'}
-    else if(l.temp>26){f='🥵';txt='有点热';}
-    else if(l.temp<18){f='🥶';txt='有点冷';}
-    else if(l.hum<40){f='🏜️';txt='偏干燥';}
-    else{f='💦';txt='偏潮湿';}
-    document.getElementById('face').textContent=f;
-    document.getElementById('comfyText').textContent=l.ts+' · '+txt;
-    // 信号
-    var sig=document.getElementById('sigbar');
-    if(sn.rssi!=null||sn.addr){
-      var r=sn.rssi;
-      var lv = r==null?2:(r>-60?4:(r>-75?3:(r>-90?2:1)));
-      sig.className='sig l'+lv;
-      sig.innerHTML='<i></i><i></i><i></i><i></i>';
-      document.getElementById('sigText').textContent= r!=null?(r+' dBm'):'已连接';
-    } else { sig.className='sig'; sig.innerHTML=''; document.getElementById('sigText').textContent='--'; }
-    document.getElementById('latency').textContent=sn.read_ms!=null?sn.read_ms:'--';
-    document.getElementById('uptime').textContent=fmtDur(sn.uptime);
-    document.getElementById('runCount').textContent=sn.count||0;
-  }
-}
-
+/* ============ 实时刷新 ============ */
 async function poll(){
   try{
-    var sn=await pywebview.api.get_snapshot();
-    renderLive(sn);
-    if(window.TODAY && CUR_DAY===window.TODAY && sn.last){
-      // 实时点追加
-      renderChart(mergeLive(DAY_POINTS));
-      var st=await pywebview.api.get_day_stats(window.TODAY);
-      renderDayStats(st);
+    var sn = await pywebview.api.get_snapshot();
+    document.getElementById('dot').className='dot '+dotType(sn.status);
+    document.getElementById('statusText').textContent=statusMap(sn.status);
+    if(sn.last){
+      var l = sn.last;
+      setV('tcTemp', l.temp.toFixed(1));
+      setV('lcHum', l.hum); setV('lcVolt', l.volt.toFixed(2));
+      setV('lcUp', ((Math.floor((sn.uptime||0)/60))+'分') );
+      setV('lcMs', sn.read_ms!=null? sn.read_ms+'':'--');
+      var f, txt;
+      if(l.temp>=18&&l.temp<=26&&l.hum>=40&&l.hum<=65){f='😊';txt='舒适惬意'}
+      else if(l.temp>26){f='🥵';txt='偏热'}else if(l.temp<18){f='🥶';txt='偏冷'}
+      else if(l.hum<40){f='🏜️';txt='偏干'}else{f='💦';txt='偏潮'}
+      document.getElementById('tcFace').textContent=f;
+      document.getElementById('tcComfy').textContent=l.ts+' · '+txt;
+      // 电量三档醒目
+      var v = l.volt, tag=document.getElementById('battTag'), vol=document.getElementById('lcVolt');
+      if(v>=3.0){ tag.textContent='充足'; tag.style.color='var(--ok)'; vol.style.color='var(--ok)'; }
+      else if(v>=2.7){ tag.textContent='偏低⚠'; tag.style.color='var(--warn)'; vol.style.color='var(--warn)'; }
+      else { tag.textContent='需更换!'; tag.style.color='var(--err)'; vol.style.color='var(--err)'; }
+      // 信号
+      var r = sn.rssi;
+      var lv = r==null?0:(r>-60?4:(r>-75?3:(r>-90?2:1)));
+      var sig = document.getElementById('lcSig');
+      sig.className='sig l'+lv; sig.innerHTML='<i></i><i></i><i></i><i></i>';
+      document.getElementById('lcSigT').textContent = r!=null? r+'dBm' : '--';
     }
+    if(sn.csv) document.getElementById('csvPath').textContent='保存到 '+sn.csv;
+    setV('tcDayN', sn.count||0);
   }catch(e){}
-}
-async function rescan(){try{await pywebview.api.reconnect()}catch(e){}}
-
-async function buildDays(){
-  var days=await pywebview.api.get_days();
-  var todayStr=new Date(); todayStr=todayStr.getFullYear()+'-'+p(todayStr.getMonth()+1)+'-'+p(todayStr.getDate());
-  window.TODAY=todayStr;
-  var bar=document.getElementById('daysBar');
-  bar.innerHTML='';
-  // 今天&昨天&近5天(存在时)
-  var cand=[todayStr];
-  for(var i=1;i<=6;i++){
-    var d=new Date(); d.setDate(d.getDate()-i);
-    var s=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
-    cand.push(s);
+  // 实时点更新主图(近24小时时)
+  if(curRange===1 && EC.mainChart){
+    try{ EC.mainChart.setOption({
+      xAxis:{data:[]}, series:[{data:[]},{data:[]}]},false);
+    }catch(e){}
   }
-  var btns=[];
-  cand.forEach(function(day){
-    var has=days.indexOf(day)>=0;
-    var b=document.createElement('div');
-    b.className='daybtn';
-    b.textContent= day===todayStr?'今天 · '+fmtDay(day) : fmtDay(day)+(has?'':'·无');
-    b.style.opacity=has?1:.45;
-    b.onclick=async function(){
-      btns.forEach(x=>x.classList.remove('on'));
-      b.classList.add('on');
-      await loadDay(day);
-    };
-    bar.appendChild(b); btns.push(b);
-  });
-  // 指标chips
-  var chips=document.createElement('div');chips.className='metachips';
-  chips.innerHTML='<span class="chip">MAC <b id="chMac">--</b></span>'+
-    '<span class="chip">版本 <b>v1.2</b></span>';
-  bar.appendChild(chips);
-  // 默认加载今天; 今天没数据则加载最近有记录的一天
-  var load = days.length ? (days.indexOf(todayStr) >= 0 ? todayStr : days[0]) : todayStr;
-  var li=cand.indexOf(load); if(li>=0){btns[li].classList.add('on');}
-  await loadDay(load);
-  var weekData=await pywebview.api.get_week();
-  renderWeek(weekData);
-  // 轮询取MAC
-  try{var sn=await pywebview.api.get_snapshot();if(sn.addr)document.getElementById('chMac').textContent=sn.addr.slice(0,8)+'…'}catch(e){}
 }
+async function rescan(){ try{ await pywebview.api.reconnect(); }catch(e){} }
 
-document.getElementById('intervalSel').addEventListener('change',async function(){
-  try{await pywebview.api.set_interval(Number(this.value))}catch(e){}});
-window.addEventListener('resize',()=>{chart.resize();weekChart.resize()});
-setInterval(()=>{var d=new Date();document.getElementById('clock').textContent=
+/* ============ 常驻 ============ */
+document.getElementById('intervalSel').addEventListener('change',function(){
+  pywebview.api.set_interval(Number(this.value));
+});
+window.addEventListener('resize',function(){ Object.keys(EC).forEach(k=>{try{EC[k].resize()}catch(e){}}) });
+setInterval(function(){var d=new Date();document.getElementById('clock').textContent=
   p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
-  document.getElementById('date').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+'日一二三四五六'[d.getDay()];},1000);
+  document.getElementById('date').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+'日一二三四五六'[d.getDay()]},1000);
 
 (async function init(){
-  try{await pywebview.api.start()}catch(e){}
-  try{window.LIVE=await pywebview.api.get_live()}catch(e){window.LIVE=[]}
-  setInterval(poll,1000);
-  await buildDays();
-  poll();
+  try{ await pywebview.api.start(); }catch(e){}
+  (function(){var d=new Date(),ds=fmtDay2(d);document.getElementById('d1').value=ds;document.getElementById('d2').value=ds;})();
+  buildGrid();
+  setInterval(poll, 1000); poll();
+  setInterval(refreshAll, 20000);   // 每20秒刷新一次数据图
 })();
 </script>
 </body>
