@@ -344,25 +344,44 @@ async function refreshAll(){
 }
 
 /* ===== 主图 ===== */
+// 时间窗口毫秒(固定轴): 看的是"当前往前N范围", 曲线从记录起点自然延伸到"现在"
+function windowMs(){
+  if(custStart&&custEnd) return null;             // 自定义: 不固定
+  return ({'1h':3600e3,'6h':21600e3,'24h':86400e3,'7d':7*86400e3,'30d':30*86400e3})[curRange] || 3600e3;
+}
 async function drawMain(){
   var ec=EC.mainChart; if(!ec)return;
   var pts=RANGE_POINTS;
   document.getElementById('chTitle').textContent = rangeLabel();
+  // 温度Y轴: 至少1度跨度, 且上下留边 -> 曲线不耸立
+  var tlo=24, thi=28;
+  if(pts.length){
+    var mn=Math.min.apply(null,pts.map(x=>x.temp));
+    var mx=Math.max.apply(null,pts.map(x=>x.temp));
+    if(mx-mn < 1.0){ var mid=(mn+mx)/2; mn=mid-0.8; mx=mid+0.8; }   // 不足1度 -> 扩到至少1.6跨度
+    else { var pad=(mx-mn)*0.35; mn-=pad; mx+=pad; }                 // 留白边
+    tlo=Math.floor(mn); thi=Math.ceil(mx);
+    if(thi-tlo < 1) thi=tlo+1;
+  }
+  var win=windowMs(), nowMs=Date.now();
   ec.setOption({
     backgroundColor:'transparent',animation:firstRun,
     grid:{left:42,right:48,top:14,bottom:24},
     tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(34,211,238,.3)',
       textStyle:{color:'#e8f0ff',fontSize:12}},
     legend:{data:['温度','湿度'],top:0,right:6,itemWidth:14,itemHeight:3,textStyle:{color:'#7d8db0',fontSize:11}},
-    // 连续时间轴: 空缺时段自然断开, 不假连
+    // 固定"当前往前N"窗口: 曲线从记录起点生长到now, 空缺天然断开
     xAxis:{type:'time',
+      min: win? nowMs-win : undefined,
+      max: win? nowMs : undefined,
       axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#4a5678',fontSize:10,
         formatter:function(v){var d=new Date(v);return (curRange==='7d'||curRange==='30d')?
           (d.getMonth()+1)+'/'+d.getDate():p(d.getHours())+':'+p(d.getMinutes())}},
         axisTick:{show:false}},
     yAxis:[
-      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},scale:true,
-        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10}},
+      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},
+        min:tlo, max:thi,                          // 至少1度, 不自动收紧
+        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10,formatter:function(v){return v.toFixed(1)}}},
       {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:0,max:100,
         splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:10}}
     ],
@@ -479,10 +498,29 @@ async function poll(){
           if(ec){
             RANGE_POINTS.push({t:Math.floor(Date.now()/1000),temp:sn.last.temp,hum:sn.last.hum});
             if(RANGE_POINTS.length>12000) RANGE_POINTS=RANGE_POINTS.slice(-12000);
-            ec.setOption({
-              series:[{data:RANGE_POINTS.map(x=>[x.t*1000,x.temp])},
-                      {data:RANGE_POINTS.map(x=>[x.t*1000,x.hum])}]
-            },false);
+            // 窗口随"现在"滑动(每60秒才重设一次轴, 避免高频setOption)
+            var nowW=Math.floor(Date.now()/1000);
+            if(!window.__xwin || nowW-window.__xwin>60){
+              window.__xwin=nowW;
+              var wm=windowMs();
+              if(wm){  // 固定窗口: 只在scroll期为1h/6h/24h时滑动
+                ec.setOption({
+                  xAxis:{min:Date.now()-wm, max:Date.now()},
+                  series:[{data:RANGE_POINTS.map(x=>[x.t*1000,x.temp])},
+                          {data:RANGE_POINTS.map(x=>[x.t*1000,x.hum])}]
+                },false);
+              } else {
+                ec.setOption({
+                  series:[{data:RANGE_POINTS.map(x=>[x.t*1000,x.temp])},
+                          {data:RANGE_POINTS.map(x=>[x.t*1000,x.hum])}]
+                },false);
+              }
+            } else {
+              ec.setOption({
+                series:[{data:RANGE_POINTS.map(x=>[x.t*1000,x.temp])},
+                        {data:RANGE_POINTS.map(x=>[x.t*1000,x.hum])}]
+              },false);
+            }
           }
         }catch(e){}
       }
