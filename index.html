@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>宿舍温湿度管家</title>
+<script src="assets/echarts.min.js"></script>
+<style>
+  :root {
+    --bg-a:#070b14; --bg-b:#0d1526;
+    --card:rgba(17,25,44,.72); --card-line:rgba(120,150,200,.14);
+    --text:#e8edf6; --dim:#8a97b3; --faint:#5a6886;
+    --accent:#5aa7ff; --accent2:#8b5cf6;
+    --temp:#ff8a7a; --hum:#5fb8ff; --ok:#3ddc97; --warn:#ffc24d; --err:#ff6b81;
+    --radius:18px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
+    color:var(--text); height:100vh; overflow:hidden; user-select:none;
+    background:
+      radial-gradient(900px 500px at 82% -12%, rgba(90,137,255,.16), transparent 60%),
+      radial-gradient(700px 460px at -10% 108%, rgba(139,92,246,.12), transparent 60%),
+      linear-gradient(165deg, var(--bg-a), var(--bg-b));
+  }
+  .wrap { display:flex; flex-direction:column; height:100vh; padding:20px 24px; gap:14px; }
+
+  /* ======== 顶栏 ======== */
+  .topbar {
+    display:flex; align-items:center; gap:14px;
+    background:var(--card); border:1px solid var(--card-line);
+    border-radius:var(--radius); padding:14px 20px;
+    backdrop-filter:blur(14px); box-shadow:0 10px 34px rgba(0,0,0,.4);
+  }
+  .logo { width:40px; height:40px; border-radius:12px; position:relative; flex:none;
+    background:linear-gradient(135deg, rgba(90,137,255,.9), rgba(139,92,246,.85));
+    box-shadow:0 6px 20px rgba(90,137,255,.4); display:flex; align-items:center; justify-content:center;
+    font-size:20px; }
+  .logo::after { content:""; position:absolute; inset:0; border-radius:12px;
+    background:linear-gradient(120deg, rgba(255,255,255,.25), transparent 45%); }
+  .titles .name { font-size:17px; font-weight:600; letter-spacing:.6px; }
+  .titles .sub { font-size:11.5px; color:var(--dim); margin-top:3px; letter-spacing:.4px; }
+
+  .right { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .clock { text-align:right; }
+  .clock .now { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:1px; }
+  .clock .date { font-size:11px; color:var(--faint); margin-top:2px; }
+
+  .status { display:flex; align-items:center; gap:9px; padding:9px 16px;
+    border-radius:999px; font-size:13px; border:1px solid var(--card-line);
+    background:rgba(10,16,30,.5); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--faint);
+    box-shadow:0 0 0 0 rgba(0,0,0,.4); transition:.3s; }
+  .dot.waiting{ background:var(--warn); box-shadow:0 0 0 4px rgba(255,194,77,.16); animation:pulse 1.3s infinite; }
+  .dot.connecting{ background:var(--warn); box-shadow:0 0 0 4px rgba(255,194,77,.16); animation:pulse .8s infinite; }
+  .dot.connected{ background:var(--ok); box-shadow:0 0 0 4px rgba(61,220,151,.16), 0 0 14px rgba(61,220,151,.45); }
+  .dot.reconnecting{ background:var(--err); box-shadow:0 0 0 4px rgba(255,107,129,.16); animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ======== 主数据区 ======== */
+  .hero { display:grid; grid-template-columns:1.15fr 1fr; gap:14px; }
+  .panel { background:var(--card); border:1px solid var(--card-line);
+    border-radius:var(--radius); backdrop-filter:blur(14px);
+    box-shadow:0 10px 30px rgba(0,0,0,.35); }
+
+  .big-temp { padding:20px 26px; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden; }
+  .big-temp .glow { position:absolute; width:260px; height:260px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,138,122,.16), transparent 65%); top:-90px; right:-60px; }
+  .big-temp .row { display:flex; align-items:flex-end; gap:14px; position:relative; }
+  .big-temp .num { font-size:64px; font-weight:200; line-height:1; letter-spacing:1px;
+    font-variant-numeric:tabular-nums; }
+  .big-temp .unit { font-size:22px; color:var(--dim); margin-bottom:10px; }
+  .big-temp .verts { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+  .big-temp .verts .v { display:flex; align-items:baseline; gap:8px; }
+  .big-temp .verts .vl { font-size:12px; color:var(--faint); width:52px; }
+  .big-temp .verts .vv { font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .big-temp .verts .vv.hum { color:var(--hum); }
+  .big-temp .meta { position:relative; margin-top:12px; font-size:11.5px; color:var(--faint); letter-spacing:.3px; }
+
+  .sidegrid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:14px; }
+  .cell { padding:14px 20px; display:flex; flex-direction:column; justify-content:center; }
+  .cell .lb { font-size:11.5px; color:var(--faint); letter-spacing:.6px; display:flex; align-items:center; gap:6px; }
+  .cell .lb .ic { font-size:13px; }
+  .cell .val { margin-top:8px; font-size:28px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .cell .val small { font-size:14px; color:var(--dim); font-weight:500; }
+  .cell .sub { margin-top:5px; font-size:11px; color:var(--faint); }
+
+  .range { display:flex; gap:10px; margin-top:10px; }
+  .range span { font-size:11.5px; padding:3px 10px; border-radius:99px;
+    background:rgba(255,255,255,.05); border:1px solid var(--card-line); color:var(--dim); }
+  .range b { color:var(--text); font-weight:600; }
+
+  /* ======== 图表 ======== */
+  .chart-panel { flex:1; min-height:0; padding:10px 8px 4px; display:flex; flex-direction:column; }
+  .chart-head { display:flex; align-items:center; padding:6px 14px 2px; }
+  .chart-head .tt { font-size:13px; font-weight:600; color:var(--dim); letter-spacing:.5px; }
+  .chart-head .seg { margin-left:auto; display:flex; gap:6px; }
+  .chart-head .seg i { font-style:normal; font-size:11px; color:var(--faint); display:flex; align-items:center; gap:5px; }
+  .chart-head .seg i::before { content:""; width:14px; height:3px; border-radius:2px; }
+  .chart-head .seg .t::before { background:var(--temp); }
+  .chart-head .seg .h::before { background:var(--hum); }
+  #chart { flex:1; min-height:0; }
+
+  /* ======== 底部控制 ======== */
+  .footbar { display:flex; align-items:center; gap:14px; padding:12px 20px; flex-wrap:wrap; }
+  .ft { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--dim); }
+  select, button { background:rgba(10,16,30,.6); color:var(--text);
+    border:1px solid var(--card-line); border-radius:10px; padding:7px 13px;
+    font-size:12.5px; outline:none; cursor:pointer; transition:.18s; font-family:inherit; }
+  select:hover, button:hover { border-color:rgba(90,167,255,.5); }
+  button.ghost { display:flex; align-items:center; gap:6px; }
+  .ft-spacer { flex:1; }
+  .csvpath { font-size:11px; color:var(--faint); max-width:420px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="logo">🌡️</div>
+    <div class="titles">
+      <div class="name">宿舍温湿度管家</div>
+      <div class="sub">小米温湿度计 3 mini · MJWSD06MMC</div>
+    </div>
+    <div class="right">
+      <div class="clock">
+        <div class="now" id="clock">--:--:--</div>
+        <div class="date" id="date">----</div>
+      </div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">启动中…</span></div>
+    </div>
+  </div>
+
+  <!-- 主数据区 -->
+  <div class="hero">
+    <div class="panel big-temp">
+      <div class="glow"></div>
+      <div class="row">
+        <div>
+          <div style="font-size:11.5px;color:var(--faint);letter-spacing:1px;margin-bottom:8px;">室 温</div>
+          <span class="num" id="curTemp">--</span><span class="unit"> ℃</span>
+        </div>
+        <div class="verts">
+          <div class="v"><span class="vl">湿度</span><span class="vv hum" id="curHum">--</span><span style="font-size:12px;color:var(--dim)">%</span></div>
+          <div class="v"><span class="vl">电压</span><span class="vv" id="curVolt">--</span><span style="font-size:12px;color:var(--dim)">V</span></div>
+          <div class="v"><span class="vl">已连接</span><span class="vv" id="uptime" style="color:var(--ok)">--</span></div>
+        </div>
+      </div>
+      <div class="meta" id="bigMeta">等待首条记录…</div>
+    </div>
+
+    <div class="sidegrid">
+      <div class="panel cell">
+        <div class="lb"><span class="ic">📈</span>温度统计</div>
+        <div class="val" id="tempStatVal">--</div>
+        <div class="range">
+          <span>均<b id="tAvg">--</b></span>
+          <span>高<b id="tMax">--</b></span>
+          <span>低<b id="tMin">--</b></span>
+        </div>
+      </div>
+      <div class="panel cell">
+        <div class="lb"><span class="ic">💧</span>湿度统计</div>
+        <div class="val" id="humStatVal">--</div>
+        <div class="range">
+          <span>均<b id="hAvg">--</b></span>
+          <span>高<b id="hMax">--</b></span>
+          <span>低<b id="hMin">--</b></span>
+        </div>
+      </div>
+      <div class="panel cell">
+        <div class="lb"><span class="ic">🔋</span>电池</div>
+        <div class="val" id="battVal">--</div>
+        <div class="sub" id="battHint">电量信息</div>
+      </div>
+      <div class="panel cell">
+        <div class="lb"><span class="ic">🗂️</span>本次记录</div>
+        <div class="val" id="countVal">0</div>
+        <div class="sub" id="lastRec">等待数据</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图表 -->
+  <div class="panel chart-panel">
+    <div class="chart-head">
+      <span class="tt">实时趋势</span>
+      <span class="seg"><i class="t">温度</i><i class="h">湿度</i></span>
+    </div>
+    <div id="chart"></div>
+  </div>
+
+  <!-- 底部 -->
+  <div class="panel footbar">
+    <div class="ft">采样
+      <select id="intervalSel">
+        <option value="6">6 秒</option>
+        <option value="15">15 秒</option>
+        <option value="30" selected>30 秒（推荐）</option>
+        <option value="60">60 秒</option>
+        <option value="300">5 分钟</option>
+      </select>
+    </div>
+    <button id="btnRescan" class="ghost" onclick="rescan()">↻ 重新连接</button>
+    <div class="ft-spacer"></div>
+    <div class="csvpath" id="csvPath" title="数据文件位置">data/…</div>
+  </div>
+</div>
+
+<script>
+  var chart = echarts.init(document.getElementById('chart'));
+  var firstRun = true;
+
+  function statusMap(s){
+    return { idle:'待机', waiting:'寻找设备…', found:'已找到，连接中…',
+             connecting:'连接中…', connected:'连接稳定，采集中',
+             reconnecting:'掉线，自动找回中…', session_end:'会话结束', disconnected:'已断开' }[s]||s||'未知';
+  }
+  function dotType(s){
+    if(s==='connected') return 'connected';
+    if(s==='waiting'||s==='found'||s==='connecting') return 'connecting';
+    return 'reconnecting';
+  }
+  function p(n){return n<10?'0'+n:n}
+  function fmtClock(sec){var d=new Date(sec*1000);return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
+  function fmtDur(sec){
+    if(sec==null)return;
+    var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);
+    return h>0? h+'h '+p(m)+'m' : p(m)+'m '+p(sec%60)+'s';
+  }
+
+  function renderChart(hist){
+    var times=hist.map(x=>fmtClock(x.t)), temps=hist.map(x=>x.temp), hums=hist.map(x=>x.hum);
+    chart.setOption({
+      backgroundColor:'transparent',
+      animation:firstRun,
+      grid:{left:46,right:50,top:18,bottom:24},
+      tooltip:{trigger:'axis',backgroundColor:'rgba(13,21,38,.92)',
+        borderColor:'rgba(120,150,200,.25)',textStyle:{color:'#e8edf6',fontSize:12}},
+      legend:{data:['温度','湿度'],top:0,right:6,itemWidth:14,itemHeight:3,
+        textStyle:{color:'#8a97b3',fontSize:11}},
+      xAxis:{type:'category',data:times,boundaryGap:false,
+        axisLine:{lineStyle:{color:'rgba(120,150,200,.2)'}},axisLabel:{color:'#5a6886',fontSize:11},
+        axisTick:{show:false}},
+      yAxis:[
+        {type:'value',name:'℃',nameTextStyle:{color:'#5a6886',fontSize:11},
+          scale:true,min:function(v){return Math.floor(v.min-1);},max:function(v){return Math.ceil(v.max+1);},
+          splitLine:{lineStyle:{color:'rgba(120,150,200,.08)'}},axisLabel:{color:'#5a6886',fontSize:11}},
+        {type:'value',name:'%',nameTextStyle:{color:'#5a6886',fontSize:11},
+          min:0,max:100,splitLine:{show:false},axisLabel:{color:'#5a6886',fontSize:11}}
+      ],
+      series:[
+        {name:'温度',type:'line',data:temps,yAxisIndex:0,smooth:true,symbol:'none',
+          lineStyle:{width:2.6,color:'#ff8a7a'},
+          itemStyle:{color:'#ff8a7a'},
+          areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
+            {offset:0,color:'rgba(255,138,122,.22)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
+        {name:'湿度',type:'line',data:hums,yAxisIndex:1,smooth:true,symbol:'none',
+          lineStyle:{width:2,color:'#5fb8ff'},itemStyle:{color:'#5fb8ff'}}
+      ]
+    },true);
+    firstRun=false;
+  }
+
+  function render(s){
+    var st=s.status;
+    document.getElementById('dot').className='dot '+dotType(st);
+    document.getElementById('statusText').textContent=
+      statusMap(st)+(s.rssi? ' · '+s.rssi+'dBm':'');
+    if(s.last){
+      document.getElementById('curTemp').textContent=s.last.temp.toFixed(1);
+      document.getElementById('curHum').textContent=s.last.hum;
+      document.getElementById('curVolt').textContent=s.last.volt.toFixed(2);
+      document.getElementById('bigMeta').textContent=
+        '最近 '+s.last.ts+' 更新 · 本次断电找回 '+s.lost+' 次'+(s.connected?'':' · 等待连接');
+    } else {
+      document.getElementById('curTemp').textContent='--';
+      document.getElementById('curHum').textContent='--';
+      document.getElementById('curVolt').textContent='--';
+      document.getElementById('bigMeta').textContent='等待首条记录…';
+    }
+    // 运行时长
+    document.getElementById('uptime').textContent=fmtDur(s.uptime)||'--';
+    // 统计
+    if(s.temp_stat){
+      var ts=s.temp_stat,hs=s.hum_stat;
+      document.getElementById('tempStatVal').textContent=ts.avg+' ℃';
+      document.getElementById('tAvg').textContent=ts.avg;
+      document.getElementById('tMax').textContent=ts.max;
+      document.getElementById('tMin').textContent=ts.min;
+      document.getElementById('humStatVal').textContent=hs.avg+' %';
+      document.getElementById('hAvg').textContent=hs.avg;
+      document.getElementById('hMax').textContent=hs.max;
+      document.getElementById('hMin').textContent=hs.min;
+    }
+    // 电池
+    var vc=s.last?s.last.volt:0;
+    document.getElementById('battVal').textContent=vc?vc.toFixed(2)+' V':'--';
+    document.getElementById('battHint').textContent=
+      vc>=3.0?'电量充足 · CR2450':(vc>=2.7?'电量偏低':'请更换电池');
+    document.getElementById('countVal').textContent=s.count||0;
+    document.getElementById('lastRec').textContent = s.last?('最近 '+s.last.ts):'等待数据';
+    if(s.csv) document.getElementById('csvPath').textContent='保存到 '+s.csv;
+    if(s.history&&s.history.length) renderChart(s.history);
+    else if(firstRun) renderChart([]);
+  }
+
+  async function poll(){ try{ render(await pywebview.api.get_snapshot()); }catch(e){console.error(e);} }
+  async function rescan(){ try{ await pywebview.api.reconnect(); }catch(e){} }
+
+  document.getElementById('intervalSel').addEventListener('change',async function(){
+    try{ await pywebview.api.set_interval(Number(this.value)); }catch(e){}
+  });
+  window.addEventListener('resize',()=>chart.resize());
+  setInterval(()=>{var d=new Date();document.getElementById('clock').textContent=
+    p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+    document.getElementById('date').textContent=
+      d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+
+      '日一二三四五六'[d.getDay()];},1000);
+
+  (async function init(){
+    try{ await pywebview.api.start(); }catch(e){}
+    setInterval(poll,1000); poll();
+  })();
+</script>
+</body>
+</html>

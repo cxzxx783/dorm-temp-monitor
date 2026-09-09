@@ -1,0 +1,24 @@
+# 数据 & 本地记忆(隐私, 不入库)
+data/
+*.csv
+
+# MAC 记忆
+data/device_mac.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# PyInstaller 产物
+build/
+dist/
+*.spec
+
+# 打包exe(体积大, 自行编译)
+*.exe
+
+# 临时
+.DS_Store
+Thumbs.db
