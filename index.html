@@ -163,8 +163,8 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
     <span class="miniinfo" id="rangeInfo">-</span>
     <span class="ctrlabel">采样</span>
     <select id="intervalSel">
-      <option value="6">6s</option><option value="15">15s</option>
-      <option value="30" selected>30s</option><option value="60">60s</option><option value="300">5min</option>
+      <option value="6" selected>6s</option><option value="15">15s</option>
+      <option value="30">30s</option><option value="60">60s</option><option value="300">5min</option>
     </select>
     <button onclick="rescan()">↻ 重连</button>
     <button class="helpbtn" onclick="openHelp()">❓ 使用说明</button>
@@ -285,7 +285,7 @@ window.addEventListener('unhandledrejection', function(e){ window.__errs.push('r
 function err(tag, e){ try{ window.__errs.push(tag+':'+String(e && e.message || e)); }catch(_){} }
 
 var EC = {};
-var curRange = localStorage.getItem('thm_range') || '6h';
+var curRange = localStorage.getItem('thm_range_v2') || '1h';   // 默认近1小时(新key避免旧记忆)
 var custStart = null, custEnd = null, firstRun = true;
 var RANGE_POINTS = [];
 window.__lastTs = null;
@@ -316,7 +316,7 @@ function setRange(el){
   document.querySelectorAll('.rangebtn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   curRange=el.dataset.r;
-  try{ localStorage.setItem('thm_range', curRange); }catch(e){}
+  try{ localStorage.setItem('thm_range_v2', curRange); }catch(e){}
   if(curRange==='custom'){document.getElementById('custWrap').classList.remove('hidden')}
   else{document.getElementById('custWrap').classList.add('hidden');custStart=null;custEnd=null}
   refreshAll();
@@ -368,13 +368,13 @@ async function drawMain(){
     ],
     series:[
       {name:'温度',type:'line',data:pts.map(x=>[x.t*1000,x.temp]),yAxisIndex:0,
-        smooth:true,symbol:'none',connectNulls:false,
+        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,
         lineStyle:{width:2.5,color:'#ff7a6b'},
         itemStyle:{color:'#ff7a6b'},
         areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
           {offset:0,color:'rgba(255,122,107,.18)'},{offset:1,color:'rgba(255,122,107,0)'}]}}},
       {name:'湿度',type:'line',data:pts.map(x=>[x.t*1000,x.hum]),yAxisIndex:1,
-        smooth:true,symbol:'none',connectNulls:false,
+        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,
         lineStyle:{width:2,color:'#3aa0ff'},itemStyle:{color:'#3aa0ff'}}
     ]
   },true); firstRun=false;
