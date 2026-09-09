@@ -167,7 +167,26 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
     <span class="rangebtn" data-r="30d" onclick="setRange(this)">近30天</span>
     <span class="rangebtn" data-r="custom" onclick="setRange(this)">自定义</span>
     <span class="custrange hidden" id="custWrap">
-      <input type="date" id="d1"><input type="date" id="d2"><button onclick="applyCustom()">应用</button>
+      <!-- 三模式切换 -->
+      <select id="custMode" onchange="custModeChanged()" style="width:auto">
+        <option value="len">近X时长(分钟/小时)</option>
+        <option value="days">近X天</option>
+        <option value="between">起止时刻</option>
+      </select>
+      <!-- 模式A: 近X时长 -->
+      <span id="custLen" class="custseg">
+        <input type="number" id="lenNum" min="1" max="7200" value="3" style="width:64px">
+        <select id="lenUnit"><option value="min">分钟</option><option value="hour">小时</option></select>
+      </span>
+      <!-- 模式B: 近X天 -->
+      <span id="custDays" class="custseg hidden">
+        <input type="number" id="daysNum" min="1" max="365" value="14" style="width:64px"><span class="ctrlabel">天</span>
+      </span>
+      <!-- 模式C: 起止时刻(含时间) -->
+      <span id="custBetween" class="custseg hidden">
+        <input type="datetime-local" id="d1"><span class="ctrlabel">至</span><input type="datetime-local" id="d2">
+      </span>
+      <button onclick="applyCustom()">应用</button>
     </span>
     <span class="sp2"></span>
     <span class="miniinfo" id="rangeInfo">-</span>
@@ -296,7 +315,8 @@ function err(tag, e){ try{ window.__errs.push(tag+':'+String(e && e.message || e
 
 var EC = {};
 var curRange = 'live';   // 默认恒为"本次运行"(用户要求: 每次打开都是本次运行页)
-var custStart = null, custEnd = null, firstRun = true;
+// 自定义三模式: len=近X时长 days=近X天 between=起止时刻
+var custMode = 'len', custStart = null, custEnd = null, custNum = 3, custUnit = 'hour', firstRun = true;
 var RANGE_POINTS = [];
 window.__lastTs = null;
 
@@ -318,9 +338,18 @@ function initCharts(){
 }
 
 /* ===== 时间范围 ===== */
+function custLabel(){
+  if(curRange!=='custom') return '';
+  if(custMode==='len') return '近'+custNum+custUnit_label();
+  if(custMode==='days') return '近'+custNum+'天';
+  if(custStart&&custEnd) return fmtDT(custStart)+' ~ '+fmtDT(custEnd);
+  return '自定义';
+}
+function custUnit_label(){ return custUnit==='min'?'分钟':'小时'; }
+function fmtDT(v){ var s=String(v); return s.length>10? s.slice(5,16).replace('T',' ') : s.slice(5); }
 function rangeLabel(){
-  if(custStart&&custEnd) return custStart+' ~ '+custEnd;
-  return ({'live':'本次运行','10m':'近10分钟','30m':'近30分钟','1h':'近1小时','6h':'近6小时','24h':'近24小时','7d':'近7天','30d':'近30天','custom':'自定义'})[curRange]||curRange;
+  if(curRange==='custom') return custLabel();
+  return ({'live':'本次运行','10m':'近10分钟','30m':'近30分钟','1h':'近1小时','6h':'近6小时','24h':'近24小时','7d':'近7天','30d':'近30天'})[curRange]||curRange;
 }
 function setRange(el){
   document.querySelectorAll('.rangebtn').forEach(b=>b.classList.remove('on'));
@@ -329,20 +358,43 @@ function setRange(el){
   // live(本次运行)只在本次会话有效, 不记忆为默认
   if(curRange!=='live'){ try{ localStorage.setItem('thm_range_v2', curRange); }catch(e){} }
   else { try{ localStorage.removeItem('thm_range_v2'); }catch(e){} }
-  if(curRange==='custom'){document.getElementById('custWrap').classList.remove('hidden')}
+  if(curRange==='custom'){
+    document.getElementById('custWrap').classList.remove('hidden');
+    custModeChanged();   // 同步显示当前模式
+  }
   else{document.getElementById('custWrap').classList.add('hidden');custStart=null;custEnd=null}
   refreshAll();
 }
+function custModeChanged(){
+  custMode = document.getElementById('custMode').value;
+  document.getElementById('custLen').classList.toggle('hidden', custMode!=='len');
+  document.getElementById('custDays').classList.toggle('hidden', custMode!=='days');
+  document.getElementById('custBetween').classList.toggle('hidden', custMode!=='between');
+}
 async function applyCustom(){
-  var a=document.getElementById('d1').value, b=document.getElementById('d2').value;
-  if(!a||!b)return; if(a>b){var t=a;a=b;b=t}
-  custStart=a; custEnd=b;
+  custMode = document.getElementById('custMode').value;
+  if(custMode==='len'){
+    custNum = parseInt(document.getElementById('lenNum').value) || 3;
+    custUnit = document.getElementById('lenUnit').value;
+  } else if(custMode==='days'){
+    custNum = parseInt(document.getElementById('daysNum').value) || 14;
+  } else {
+    var a=document.getElementById('d1').value, b=document.getElementById('d2').value;
+    if(!a||!b){ return; }
+    if(a>b){ var t=a; a=b; b=t; }
+    custStart=a; custEnd=b;
+  }
   document.querySelectorAll('.rangebtn').forEach(x=>x.classList.remove('on'));
   document.querySelector('.rangebtn[data-r="custom"]').classList.add('on');
   refreshAll();
 }
 async function fetchSel(){
-  if(custStart&&custEnd) return await pywebview.api.get_between(custStart,custEnd);
+  if(curRange==='custom'){
+    if(custMode==='len') return await pywebview.api.get_hours(custUnit==='min'? custNum/60 : custNum);
+    if(custMode==='days') return await pywebview.api.get_range(custNum);
+    if(custStart&&custEnd) return await pywebview.api.get_between(custStart,custEnd);
+    return [];
+  }
   if(curRange==='live') return await pywebview.api.get_live();   // 本次运行(从打开连接到现在)
   if(curRange==='10m') return await pywebview.api.get_hours(10/60);
   if(curRange==='30m') return await pywebview.api.get_hours(30/60);
@@ -361,7 +413,11 @@ async function refreshAll(){
 /* ===== 主图 ===== */
 // 时间窗口毫秒(固定轴): 看的是"当前往前N范围", 曲线从记录起点自然延伸到"现在"
 function windowMs(){
-  if(custStart&&custEnd) return null;             // 自定义: 不固定
+  if(curRange==='custom'){
+    if(custMode==='len') return (custUnit==='min'? custNum*60 : custNum*3600) * 1000;
+    if(custMode==='days') return custNum * 86400000;
+    return null;   // 起止时刻: 不固定, 轴自动贴合
+  }
   if(curRange==='live') return null;              // 本次运行: 不固定, 轴自动贴合数据起点~now
   return ({'10m':600e3,'30m':1800e3,'1h':3600e3,'6h':21600e3,'24h':86400e3,'7d':7*86400e3,'30d':30*86400e3})[curRange] || 3600e3;
 }
@@ -604,7 +660,11 @@ function boot(){
   window.__booted = true;
   (async function init(){
     try{ await pywebview.api.start(); }catch(e){ err('start', e); }
-    (function(){var d=new Date(),ds=fmtDay2(d);document.getElementById('d1').value=ds;document.getElementById('d2').value=ds;
+    (function(){var d=new Date();
+      var ds=fmtDay2(d);
+      function dt(v){var x=new Date(v);return fmtDay2(x)+'T'+p(x.getHours())+':'+p(x.getMinutes())}
+      document.getElementById('d1').value=ds+'T00:00';
+      document.getElementById('d2').value=dt(d);
       // 恢复上次选择的时间范围高亮
       document.querySelectorAll('.rangebtn').forEach(b=>{
         b.classList.toggle('on', b.dataset.r===curRange);

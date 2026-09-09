@@ -16,8 +16,10 @@ def main():
     sc.TargetPath = exe
     sc.WorkingDirectory = BASE
     sc.Description = "温湿度管家 - 小米温湿度计3mini记录器"
+    # 快捷方式图标: 默认继承exe自带图标(最稳, 不依赖单独ico文件路径)
+    sc.IconLocation = exe
     sc.Save()
-    print("快捷方式 ->", exe)
+    print("快捷方式 ->", exe, "+ logo图标")
 
 if __name__ == "__main__":
     main()

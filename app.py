@@ -9,7 +9,7 @@
 import os, threading, datetime
 import webview
 from sensor import Sensor, DEFAULT_LOG_DIR
-from paths import resource_dir, load_saved_mac
+from paths import resource_dir, app_dir, load_saved_mac
 import history as hist
 
 DEVICE_NAME = "MJWSD06MMC"         # 温湿度计型号名
@@ -140,19 +140,35 @@ class Api:
         return [x for x in pts if x["t"] >= start_ts - 1]  # -1s容差
 
     def get_between(self, start, end):
-        """自定义起止日期间的全部记录点(含首尾)"""
-        points = []
-        try:
-            d = datetime.datetime.strptime(start, "%Y-%m-%d").date()
-            e = datetime.datetime.strptime(end, "%Y-%m-%d").date()
-        except Exception:
-            return points
+        """自定义起止时间段的全部记录点(含首尾)
+        支持两种格式:
+          - '2026-09-09'                整日
+          - '2026-09-09 13:00'          精确到分钟
+        """
+        def parse_between(v):
+            v = str(v).strip().replace('T', ' ')   # datetime-local 兼容: 2026-09-09T13:00
+            for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    return datetime.datetime.strptime(v, fmt)
+                except Exception:
+                    continue
+            return None
+        d = parse_between(start)
+        e = parse_between(end)
+        if not d or not e:
+            return []
         if d > e:
             d, e = e, d
-        while d <= e:
-            points.extend(hist.load_day(DATA_DIR, d.strftime("%Y-%m-%d")))
-            d += datetime.timedelta(days=1)
-        return points
+        # 是否含时间(带分钟) -> 决定结束时刻是否覆盖整天
+        has_time = (d.hour or d.minute or e.hour or e.minute) != 0
+        s_ts = d.timestamp()
+        e_ts = e.timestamp() + 86399 if not has_time else e.timestamp()
+        points = []
+        day = d.date()
+        while day <= e.date():
+            points.extend(hist.load_day(DATA_DIR, day.strftime("%Y-%m-%d")))
+            day += datetime.timedelta(days=1)
+        return [x for x in points if s_ts - 1 <= x["t"] <= e_ts + 1]
 
     def start(self):
         if not self.sensor.is_alive():
