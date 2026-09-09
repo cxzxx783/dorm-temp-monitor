@@ -177,7 +177,7 @@ def main():
     window = webview.create_window(
         "宿舍温湿度管家",
         os.path.join(base, "index.html"),
-        width=1180, height=820, min_size=(720, 520),   # 允许拉小到半屏
+        width=1280, height=860, min_size=(720, 520),   # 默认大屏舒展, 可拉小到半屏
         js_api=api, background_color="#04060f")
     api.set_window(window)
     webview.start(gui="edgechromium")
