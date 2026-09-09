@@ -60,17 +60,17 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 .miniinfo{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
 
 /* ======= 主体: 三栏填满 ======= */
-.main{flex:1;min-height:360px;display:flex;gap:12px}
-.col-left{width:clamp(170px, 21vw, 250px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0}
-.tempcard{padding:16px 18px;flex:1 1 46%;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
-.tclabel{font-size:11px;color:var(--faint);letter-spacing:2px}
-.tcbig{display:flex;align-items:baseline;gap:6px}
-.tcbig .v{font-size:62px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums}
+.main{flex:1;min-height:0;display:flex;gap:12px;overflow:hidden}
+.col-left{width:clamp(170px, 21vw, 250px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto}
+.tempcard{padding:14px 18px;flex:none;min-height:clamp(170px, 30vh, 240px);display:flex;flex-direction:column;justify-content:center;gap:7px;overflow:visible}
+.tclabel{font-size:11px;color:var(--faint);letter-spacing:2px;flex:none;line-height:1}
+.tcbig{display:flex;align-items:baseline;gap:6px;flex:none;white-space:nowrap;line-height:1}
+.tcbig .v{font-size:62px;font-weight:300;line-height:1;font-variant-numeric:tabular-nums}
 .tcbig .u{font-size:22px;color:var(--dim)}
-.tcface{font-size:26px}
-.tccomfy{font-size:11px;color:var(--dim)}
+.tcface{font-size:24px;flex:none}
+.tccomfy{font-size:11px;color:var(--dim);flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.livepanel{padding:12px 16px;flex:1;min-height:0;display:flex;flex-direction:column}
+.livepanel{padding:12px 16px;flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto}
 .wdtitle{font-size:10.5px;color:var(--faint);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .wdtitle .bar{width:3px;height:12px;border-radius:2px;background:var(--cyan)}
 .cells{display:flex;flex-direction:column;gap:9px;flex:1;justify-content:space-evenly}
@@ -91,6 +91,12 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 .col-right{width:clamp(180px, 23vw, 280px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0}
 @media (max-width: 960px){
   .tcbig .v{font-size:48px}.statcell .sv{font-size:16px}.cellrow{font-size:12px}.bottom{height:130px}
+}
+@media (max-height: 700px){
+  .tcbig .v{font-size:34px}.tcbig .u{font-size:15px}
+  .tclabel{font-size:10px}.tcface{font-size:19px}
+  .tempcard{padding:9px 14px}
+  .livepanel{padding:8px 12px}
 }
 .statgrid{flex:0 0 52%;padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:0}
 .statcell{display:flex;flex-direction:column;justify-content:center;padding:6px 10px;
@@ -353,15 +359,27 @@ async function drawMain(){
   var ec=EC.mainChart; if(!ec)return;
   var pts=RANGE_POINTS;
   document.getElementById('chTitle').textContent = rangeLabel();
-  // 温度Y轴: 至少1度跨度, 且上下留边 -> 曲线不耸立
-  var tlo=24, thi=28;
+  // 温度/湿度Y轴都自适应: 至少保留一定跨度, 留白边 -> 曲线自然铺开不变形
+  var tlo=24, thi=28, hlo=0, hhi=100;
   if(pts.length){
-    var mn=Math.min.apply(null,pts.map(x=>x.temp));
-    var mx=Math.max.apply(null,pts.map(x=>x.temp));
-    if(mx-mn < 1.0){ var mid=(mn+mx)/2; mn=mid-0.8; mx=mid+0.8; }   // 不足1度 -> 扩到至少1.6跨度
-    else { var pad=(mx-mn)*0.35; mn-=pad; mx+=pad; }                 // 留白边
-    tlo=Math.floor(mn); thi=Math.ceil(mx);
-    if(thi-tlo < 1) thi=tlo+1;
+    var tm=Math.min.apply(null,pts.map(x=>x.temp)), tx=Math.max.apply(null,pts.map(x=>x.temp));
+    if(tx-tm < 1.0){ var mid=(tm+tx)/2; tm=mid-0.8; tx=mid+0.8; }
+    else { var pad=(tx-tm)*0.4; tm-=pad; tx+=pad; }
+    tlo=Math.floor(tm); thi=Math.ceil(tx); if(thi-tlo<1) thi=tlo+1;
+    var hm=Math.min.apply(null,pts.map(x=>x.hum)), hx=Math.max.apply(null,pts.map(x=>x.hum));
+    if(hx-hm < 10){ var hmid=(hm+hx)/2; hm=hmid-6; hx=hmid+6; }
+    else { var hpad=(hx-hm)*0.35; hm-=hpad; hx+=hpad; }
+    hlo=Math.max(0,Math.floor(hm/5)*5); hhi=Math.min(100,Math.ceil(hx/5)*5); if(hhi-hlo<10) hhi=hlo+10;
+  }
+  // 空缺段用 null 垫断: 相邻采样间隔超过2分钟 -> 插入null, 线在此处真正断开(不假连)
+  function padGaps(arr){
+    var out=[];
+    for(var i=0;i<arr.length;i++){
+      var q=arr[i];
+      if(i>0 && (q[0]-(arr[i-1][0]))>120000){ out.push([q[0]-1000, null]); }
+      out.push(q);
+    }
+    return out;
   }
   var win=windowMs(), nowMs=Date.now();
   ec.setOption({
@@ -382,18 +400,18 @@ async function drawMain(){
       {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},
         min:tlo, max:thi,                          // 至少1度, 不自动收紧
         splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10,formatter:function(v){return v.toFixed(1)}}},
-      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:0,max:100,
+      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:hlo,max:hhi,
         splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:10}}
     ],
     series:[
-      {name:'温度',type:'line',data:pts.map(x=>[x.t*1000,x.temp]),yAxisIndex:0,
-        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,
+      {name:'温度',type:'line',data:padGaps(pts.map(x=>[x.t*1000,x.temp])),yAxisIndex:0,
+        smooth:true,symbol:'none',connectNulls:false,showSymbol:false,
         lineStyle:{width:2.5,color:'#ff7a6b'},
         itemStyle:{color:'#ff7a6b'},
         areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
           {offset:0,color:'rgba(255,122,107,.18)'},{offset:1,color:'rgba(255,122,107,0)'}]}}},
-      {name:'湿度',type:'line',data:pts.map(x=>[x.t*1000,x.hum]),yAxisIndex:1,
-        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,
+      {name:'湿度',type:'line',data:padGaps(pts.map(x=>[x.t*1000,x.hum])),yAxisIndex:1,
+        smooth:true,symbol:'none',connectNulls:false,showSymbol:false,
         lineStyle:{width:2,color:'#3aa0ff'},itemStyle:{color:'#3aa0ff'}}
     ]
   },true); firstRun=false;
