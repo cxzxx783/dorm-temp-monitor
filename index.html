@@ -574,10 +574,13 @@ async function poll(){
       if(v>=3.0){tag.textContent='充足';tag.style.color='var(--ok)';vol.style.color='var(--ok)'}
       else if(v>=2.7){tag.textContent='偏低⚠';tag.style.color='var(--warn)';vol.style.color='var(--warn)'}
       else{tag.textContent='需更换!';tag.style.color='var(--err)';vol.style.color='var(--err)'}
-      var r=sn.rssi, lv=r==null?0:(r>-60?4:(r>-75?3:(r>-90?2:1)));
+      // 信号格: 有RSSI用RSSI, 连接态读不到广播RSSI则用读取延迟ms代偿(实时, 会动)
+      var r=sn.rssi, ms=sn.read_ms, lv=0, sigtxt='--';
+      if(r!=null){ lv = r>-60?4:(r>-75?3:(r>-90?2:1)); sigtxt = r+'dBm'; }
+      else if(ms!=null){ lv = ms<40?4:(ms<80?3:(ms<150?2:1)); sigtxt = ms+'ms'; }
       var sig=document.getElementById('lcSig');
       sig.className='sig l'+lv; sig.innerHTML='<i></i><i></i><i></i><i></i>';
-      document.getElementById('lcSigT').textContent=r!=null?r+'dBm':'--';
+      document.getElementById('lcSigT').textContent=sigtxt;
     }
     if(sn.ms_hist&&sn.ms_hist.length) drawMs(sn.ms_hist);
   }catch(e){}

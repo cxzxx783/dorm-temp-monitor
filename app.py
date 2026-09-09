@@ -48,10 +48,18 @@ class Api:
         uptime = None
         if st.get("session_start"):
             try:
-                s0 = datetime.datetime.strptime(st["session_start"], "%H:%M:%S")
-                now = datetime.datetime.now()
-                s0 = s0.replace(year=now.year, month=now.month, day=now.day)
-                uptime = int((now - s0).total_seconds())
+                # 完整时间戳(含日期), 跨零点也正确
+                s0 = datetime.datetime.strptime(st["session_start"], "%Y-%m-%d %H:%M:%S")
+                uptime = int((datetime.datetime.now() - s0).total_seconds())
+            except ValueError:
+                # 兼容旧格式(仅时间)
+                try:
+                    s0 = datetime.datetime.strptime(st["session_start"], "%H:%M:%S")
+                    now = datetime.datetime.now()
+                    s0 = s0.replace(year=now.year, month=now.month, day=now.day)
+                    uptime = int((now - s0).total_seconds())
+                except Exception:
+                    pass
             except Exception:
                 pass
         return {

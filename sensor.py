@@ -158,7 +158,7 @@ class Sensor(threading.Thread):
         async with BleakClient(addr, timeout=20.0) as client:
             self._ever_connected = True
             self._set(connected=True, status="connected",
-                      session_start=session_start.strftime("%H:%M:%S"))
+                      session_start=session_start.strftime("%Y-%m-%d %H:%M:%S"))
             self._log("已连接! 开始持续采集 (断开后会自动找回)")
             newest = {"v": None}
 
