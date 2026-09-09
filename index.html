@@ -421,12 +421,15 @@ function windowMs(){
   if(curRange==='live') return null;              // 本次运行: 不固定, 轴自动贴合数据起点~now
   return ({'10m':600e3,'30m':1800e3,'1h':3600e3,'6h':21600e3,'24h':86400e3,'7d':7*86400e3,'30d':30*86400e3})[curRange] || 3600e3;
 }
-// 空缺段用 null 垫断: 相邻采样间隔超过2分钟 -> 插入null, 线在此处真正断开(不假连)
+// 空缺段用 null 垫断: 相邻点间隔超过"采样间隔×4 且至少3分钟" -> 插入null断开(不假连)
+// 动态阈值避免: 用户选5分钟采样时每点都被误判为空缺
+var GAP_THRESHOLD_MS = 180000;
+function setGapThresholdByInterval(sec){ GAP_THRESHOLD_MS = Math.max(180000, (sec||30)*4*1000); }
 function padGaps(arr){
   var out=[];
   for(var i=0;i<arr.length;i++){
     var q=arr[i];
-    if(i>0 && (q[0]-(arr[i-1][0]))>120000){ out.push([q[0]-1000, null]); }
+    if(i>0 && (q[0]-(arr[i-1][0]))>GAP_THRESHOLD_MS){ out.push([q[0]-1000, null]); }
     out.push(q);
   }
   return out;
@@ -436,13 +439,16 @@ async function drawMain(){
   var pts=RANGE_POINTS;
   document.getElementById('chTitle').textContent = rangeLabel();
   // 温度/湿度Y轴都自适应: 至少保留一定跨度, 留白边 -> 曲线自然铺开不变形
+  // 用循环求极值(不适用apply/展开, 几十万点会栈溢出RangeError)
+  function arrMin(a){var m=Infinity;for(var i=0;i<a.length;i++){if(a[i]<m)m=a[i]}return m}
+  function arrMax(a){var m=-Infinity;for(var i=0;i<a.length;i++){if(a[i]>m)m=a[i]}return m}
   var tlo=24, thi=28, hlo=0, hhi=100;
   if(pts.length){
-    var tm=Math.min.apply(null,pts.map(x=>x.temp)), tx=Math.max.apply(null,pts.map(x=>x.temp));
+    var tm=arrMin(pts.map(x=>x.temp)), tx=arrMax(pts.map(x=>x.temp));
     if(tx-tm < 1.0){ var mid=(tm+tx)/2; tm=mid-0.8; tx=mid+0.8; }
     else { var pad=(tx-tm)*0.4; tm-=pad; tx+=pad; }
     tlo=Math.floor(tm); thi=Math.ceil(tx); if(thi-tlo<1) thi=tlo+1;
-    var hm=Math.min.apply(null,pts.map(x=>x.hum)), hx=Math.max.apply(null,pts.map(x=>x.hum));
+    var hm=arrMin(pts.map(x=>x.hum)), hx=arrMax(pts.map(x=>x.hum));
     if(hx-hm < 10){ var hmid=(hm+hx)/2; hm=hmid-6; hx=hmid+6; }
     else { var hpad=(hx-hm)*0.35; hm-=hpad; hx+=hpad; }
     hlo=Math.max(0,Math.floor(hm/5)*5); hhi=Math.min(100,Math.ceil(hx/5)*5); if(hhi-hlo<10) hhi=hlo+10;
@@ -488,12 +494,16 @@ async function drawRangeStats(){
   var pts=RANGE_POINTS;
   if(!pts.length){ document.getElementById('rangeInfo').textContent='所选范围无数据'; return; }
   var temps=pts.map(x=>x.temp), hums=pts.map(x=>x.hum);
+  // 循环求极值(防几十万点栈溢出)
+  function arrMin(a){var m=Infinity;for(var i=0;i<a.length;i++){if(a[i]<m)m=a[i]}return m}
+  function arrMax(a){var m=-Infinity;for(var i=0;i<a.length;i++){if(a[i]>m)m=a[i]}return m}
   var avg=temps.reduce((a,b)=>a+b,0)/temps.length;
   var havg=hums.reduce((a,b)=>a+b,0)/hums.length;
-  var tmax=Math.max(...temps), tmin=Math.min(...temps);
+  var tmax=arrMax(temps), tmin=arrMin(temps);
   var imax=temps.indexOf(tmax), imin=temps.indexOf(tmin);
-  var hmax=Math.max(...hums), hmin=Math.min(...hums);
-  var days={}; pts.forEach(x=>{var d=new Date(x.t);days[p(d.getFullYear())+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())]=1});
+  var hmax=arrMax(hums), hmin=arrMin(hums);
+  // 秒级epoch转Date需*1000, 否则都落在1970年
+  var days={}; pts.forEach(x=>{var d=new Date(x.t*1000);days[p(d.getFullYear())+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())]=1});
   setV('stAvg',avg.toFixed(1)); setV('stRange',(tmax-tmin).toFixed(1));
   setV('stHavg',havg.toFixed(1)); setV('stHdiff',(hmax-hmin).toFixed(1));
   setV('stMax',tmax.toFixed(1)); setV('stMaxAt',fmtClock(pts[imax].t));
@@ -572,6 +582,7 @@ function drawMs(hist){
 async function poll(){
   try{
     var sn=await pywebview.api.get_snapshot();
+    if(sn.interval) setGapThresholdByInterval(sn.interval);
     // 实时续画主图(本次运行/近24h等有新点才追加, 空缺走padGaps保持断开)
     if((curRange==='live'||curRange==='1h'||curRange==='6h'||curRange==='24h') && sn.last){
       var newTs=sn.last.ts;

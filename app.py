@@ -69,6 +69,7 @@ class Api:
             "rssi": st.get("rssi"),
             "read_ms": st.get("read_ms"),
             "count": st.get("count", 0),
+            "lost": st.get("lost", 0),
             "last": last,
             "interval": self.sensor.interval,
             "uptime": uptime,
@@ -189,9 +190,13 @@ class Api:
             self._window.destroy()
 
     def _restart_sensor(self):
-        self.sensor.stop()
+        old = self.sensor
+        old.stop()
+        # join 旧线程(限时3秒): 避免旧线程卡在阻塞扫描里与新线程抢BLE
+        if old.is_alive():
+            old.join(timeout=3.0)
         self.sensor = Sensor(device_name=DEVICE_NAME, mac=DEVICE_MAC,
-                             interval=self.sensor.interval or 6.0,
+                             interval=old.interval or 6.0,
                              log_dir=DATA_DIR, on_event=self._on_event)
         self.sensor.start()
 

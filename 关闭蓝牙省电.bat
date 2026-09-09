@@ -8,25 +8,27 @@ if %errorlevel% neq 0 (
 )
 
 echo ============================================
-echo   关闭蓝牙省电策略 (让连接更持久)
+echo   关闭蓝牙/USB 省电策略 (让连接更持久)
 echo --------------------------------------------
-echo   原理: Windows 会在一段时间后断开
-echo   空闲的蓝牙设备连接来省电.
-echo   关闭后, 温湿度计连接应答更持久.
+echo   原理: Windows 会断开空闲的蓝牙设备连接来
+echo   省电. 关闭后温湿度计连接应答更持久.
+echo   修改: USB选择性暂停 设为"禁用"
 echo ============================================
 echo.
 
-:: 关闭蓝牙无线电的电源管理(Ultimate/High/Balanced 各电源方案)
-powercfg /setdcvalueindex SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 00000000-0000-0000-0000-000000000000 1 >nul 2>&1
-powercfg /setacvalueindex SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 00000000-0000-0000-0000-000000000000 1 >nul 2>&1
+:: USB 选择性暂停 -> 0 = 已禁用 (之前误设成1=启用, 这里修正)
+powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0
+powercfg /setdcvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0
 
-:: 关闭 USB 选择性暂停(蓝牙适配器常走USB)
-powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 >nul 2>&1
-powercfg /setdcvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 >nul 2>&1
-powercfg /setacvalueindex SCHEME_CURRENT SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 >nul 2>&1
+:: 蓝牙无线电电源管理 -> 设为0 (允许更持久)  (此GUID可能存在机型差异, 失败则忽略)
+powercfg /setacvalueindex SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 00000000-0000-0000-0000-0000000000 0 >nul 2>&1
+powercfg /setdcvalueindex SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 00000000-0000-0000-0000-0000000000 0 >nul 2>&1
 
-echo 已尝试关闭蓝牙省电 + USB选择性暂停.
+:: 应用当前电源方案
+powercfg /S SCHEME_CURRENT >nul 2>&1
+
+echo 完成. USB选择性暂停已设为"禁用".
+echo 验证: 设置-系统-电源, 或运行 powercfg /q 查看.
 echo.
-echo 提示: 若想 24 小时不睡, 建议再把系统电源改成
-echo "从不休眠" (设置-电源-屏幕和睡眠).
+echo 提示: 想24小时不睡, 再把系统电源改成"从不休眠"(可仅关屏幕).
 pause

@@ -174,7 +174,7 @@ class Sensor(threading.Thread):
 
             last_rssi_refresh = time.time() - 61   # 首次进入循环立即刷一次RSSI
             while not stop_ev.is_set():
-                # 定期刷新信号强度RSSI(连接期间设备废弃广播, 每60s短扫描一次)
+                # 定期刷新信号强度RSSI(连接期间设备停止广播, 扫描常失败)
                 if time.time() - last_rssi_refresh >= 60:
                     last_rssi_refresh = time.time()
                     try:
@@ -183,8 +183,13 @@ class Sensor(threading.Thread):
                         if rssi_dev and rssi_dev.rssi is not None:
                             with self._lock:
                                 self._state["rssi"] = rssi_dev.rssi
+                        else:
+                            # 扫不到=设备停广播, RSSI不可用, 置None(前端回退到延迟ms)
+                            with self._lock:
+                                self._state["rssi"] = None
                     except Exception:
-                        pass
+                        with self._lock:
+                            self._state["rssi"] = None
                 # 数据轮询(优先通知缓存, 再主动读保活)
                 v = newest.get("v")
                 try:
@@ -218,11 +223,17 @@ class Sensor(threading.Thread):
                 self._state["csv"] = self._csv_path
         row = [ts.strftime("%Y-%m-%d %H:%M:%S"), round(v[0],1), v[1], round(v[2],3)]
         new = not os.path.exists(self._csv_path)
-        with open(self._csv_path, "a", encoding="utf-8-sig", newline="") as f:
-            w = csv.writer(f)
-            if new:
-                w.writerow(["时间","温度℃","湿度%","电压V"])
-            w.writerow(row)
+        try:
+            # Excel 打开文件会加锁 -> 写失败不能crash会话(否则无限重连风暴), 跳过本轮即可
+            with open(self._csv_path, "a", encoding="utf-8-sig", newline="") as f:
+                w = csv.writer(f)
+                if new:
+                    w.writerow(["时间","温度℃","湿度%","电压V"])
+                w.writerow(row)
+        except PermissionError:
+            self._log(f"CSV写入被占用(可能在Excel中打开), 本轮跳过: {self._csv_path}")
+        except Exception as e:
+            self._log(f"CSV写入失败: {e}")
         with self._lock:
             self._state["last"] = {"ts": ts.strftime("%H:%M:%S"),
                                    "temp": v[0], "hum": v[1], "volt": v[2]}
@@ -231,11 +242,11 @@ class Sensor(threading.Thread):
 
 
 def parse(data: bytes):
-    """小端解析: 温度2字节/100, 湿度1字节, 电压2字节/1000"""
+    """小端解析: 温度2字节有符号int16/100, 湿度1字节, 电压2字节/1000"""
     if len(data) >= 5:
-        temp = int.from_bytes(data[0:2], "little") / 100.0
+        temp = int.from_bytes(data[0:2], "little", signed=True) / 100.0   # 有符号! 支持负温
         hum = data[2]
         volt = int.from_bytes(data[3:5], "little") / 1000.0
-        if 0 < temp < 60 and 0 <= hum <= 100 and 1.0 < volt < 4.0:
+        if -40 <= temp < 60 and 0 <= hum <= 100 and 1.0 < volt < 4.0:
             return temp, hum, volt
     return None

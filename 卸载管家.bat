@@ -15,13 +15,16 @@ if /i not "%confirm%"=="yes" (
 )
 
 echo.
-echo 正在关闭运行中的软件...
-taskkill /f /im python.exe >nul 2>&1
+echo 正在关闭运行中的软件(仅本软件, 不影响其他Python程序)...
+taskkill /f /im "宿舍温湿度管家.exe" >nul 2>&1
+taskkill /f /fi "WINDOWTITLE eq 宿舍温湿度管家*" >nul 2>&1
+taskkill /f /fi "WINDOWTITLE eq 温湿度管家*" >nul 2>&1
 
-echo 正在删除桌面快捷方式...
+echo 正在删除桌面快捷方式(新名+旧名都删)...
+del "%USERPROFILE%\Desktop\温湿度管家.lnk" >nul 2>&1
 del "%USERPROFILE%\Desktop\宿舍温湿度管家.lnk" >nul 2>&1
 
-echo 正在删除软件文件夹...
+echo 正在删除软件文件夹(含数据记录)...
 cd /d "%TEMP%"
 start "" /b cmd /c "timeout /t 2 >nul & rd /s /q ""%~dp0"""
 
