@@ -295,9 +295,7 @@ window.addEventListener('unhandledrejection', function(e){ window.__errs.push('r
 function err(tag, e){ try{ window.__errs.push(tag+':'+String(e && e.message || e)); }catch(_){} }
 
 var EC = {};
-// 默认近1小时; live(本次运行)不记忆为默认, 避免重启后空页
-var savedRange = localStorage.getItem('thm_range_v2');
-var curRange = (savedRange && savedRange!=='live') ? savedRange : '1h';
+var curRange = 'live';   // 默认恒为"本次运行"(用户要求: 每次打开都是本次运行页)
 var custStart = null, custEnd = null, firstRun = true;
 var RANGE_POINTS = [];
 window.__lastTs = null;
