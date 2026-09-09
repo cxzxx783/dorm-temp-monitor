@@ -6,16 +6,28 @@
 <script src="assets/echarts.min.js"></script>
 <style>
 :root{
-  --bg:#0b1120; --text:#e8eefb; --dim:#9aa7c6; --faint:#5c6b8f;
-  --cyan:#3aa0ff; --violet:#9d7bff; --temp:#ff7a6b; --hum:#3aa0ff;
+  --bg:#0b1120; --text:#e8eefb; --dim:#9aa7c6; --faint:#6b7d9e;
+  --cyan:#3aa0ff; --violet:#9d7bff; --temp:#ff7a6b;
+  --hum:#43c6ff;              /* 湿度数据色: 与交互强调 --cyan 错开, 不再同色撞车 */
   --ok:#36c98a; --warn:#f0b14a; --err:#f06a6a;
+  --hum-dim:#2f9bd8;          /* 湿度低饱和变体 */
   --card:rgba(19,28,50,.85); --line:rgba(150,180,230,.15);
+  --scrollbar:rgba(120,150,200,.22);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
   color:var(--text); overflow:hidden; user-select:none;
-  background:linear-gradient(172deg,#0e1628 0%, #0a101f 55%, #0b1322 100%);}
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(58,160,255,.05), transparent 55%),
+    linear-gradient(172deg,var(--bg) 0%, #080d1c 100%);}
+/* 通用隐藏类(JS统一用classList.toggle('hidden')) */
+.hidden{display:none!important}
+/* 全局滚动条适配深色(白色滚动条隐形问题) */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:rgba(120,150,200,.4)}
+::-webkit-scrollbar-track{background:transparent}
 
 .app{position:relative;z-index:1;height:100vh;padding:14px 18px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 
@@ -48,8 +60,10 @@ body{font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,s
 .rangebtn.on{background:#22406e;border-color:#3aa0ff;color:#fff}
 .custrange{display:flex;align-items:center;gap:6px}
 .custrange.hidden{display:none}
-input[type=date]{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);
+input[type=date],input[type=number],input[type=datetime-local]{
+  background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);
   border-radius:8px;padding:5px 8px;font-size:12px;outline:none;font-family:inherit;color-scheme:dark}
+input[type=number]::-webkit-inner-spin-button{opacity:.4}
 button{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);border-radius:9px;
   padding:5px 12px;font-size:12px;outline:none;cursor:pointer;transition:.18s;font-family:inherit}
 button:hover{border-color:var(--cyan)}
@@ -102,9 +116,10 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 .statcell{display:flex;flex-direction:column;justify-content:center;padding:6px 10px;
   background:rgba(10,18,34,.5);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .statcell .sl{font-size:10px;color:var(--faint);line-height:1.2}
-.statcell .svbox{display:flex;align-items:baseline;gap:2px;margin-top:2px;white-space:nowrap;line-height:1}
+.statcell .svbox{display:flex;align-items:baseline;margin-top:2px;white-space:nowrap;line-height:1}
 .statcell .sv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
-.statcell .ss{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;line-height:1}
+/* 单位/时刻与数值分开: 左侧留隙 + 弱化, 避免"27.621:02:43"粘成错数 */
+.statcell .ss{font-size:11px;color:var(--faint);opacity:.75;margin-left:5px;font-variant-numeric:tabular-nums;line-height:1}
 .msbox{padding:10px 12px;flex:1;min-height:0;position:relative}
 .msbox .msnow{font-size:12px;color:var(--violet);margin-left:6px}
 .mschart{position:absolute;top:26px;left:8px;right:8px;bottom:6px}
@@ -146,7 +161,7 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 
   <!-- 顶栏 -->
   <div class="panel topbar">
-    <div class="logo">🌡️</div>
+    <div class="logo"><img src="assets/logo.png" alt="" style="width:34px;height:34px;border-radius:9px;object-fit:cover"></div>
     <div class="titles"><div class="name">宿舍温湿度管家</div><div class="sub">Xiaomi THM 3 mini · 免网关</div></div>
     <div class="right">
       <div class="clock"><div class="now" id="clock">--:--:--</div><div class="date" id="date">----</div></div>
@@ -196,7 +211,7 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
       <option value="30">30s</option><option value="60">60s</option><option value="300">5min</option>
     </select>
     <button onclick="rescan()">↻ 重连</button>
-    <button class="helpbtn" onclick="openHelp()">❓ 使用说明</button>
+    <button class="helpbtn" onclick="openHelp()">ⓘ 使用说明</button>
   </div>
 
   <!-- 主体三栏 -->
@@ -259,7 +274,7 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
       <div class="minichart" id="monthChart"></div>
     </div>
     <div class="panel">
-      <div class="wdtitle"><span class="bar"></span>今日温度区间</div>
+      <div class="wdtitle"><span class="bar"></span>今日温度走势</div>
       <div class="minichart" id="todayChart"></div>
     </div>
   </div>
@@ -464,27 +479,27 @@ async function drawMain(){
     xAxis:{type:'time',
       min: win? nowMs-win : undefined,
       max: win? nowMs : undefined,
-      axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#4a5678',fontSize:10,
+      axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#7d8db0',fontSize:10,
         formatter:function(v){var d=new Date(v);return (curRange==='7d'||curRange==='30d')?
           (d.getMonth()+1)+'/'+d.getDate():p(d.getHours())+':'+p(d.getMinutes())}},
         axisTick:{show:false}},
     yAxis:[
-      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},
+      {type:'value',name:'℃',nameTextStyle:{color:'#7d8db0',fontSize:10},
         min:tlo, max:thi,                          // 至少1度, 不自动收紧
-        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10,formatter:function(v){return v.toFixed(1)}}},
-      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:hlo,max:hhi,
-        splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:10}}
+        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#7d8db0',fontSize:10,formatter:function(v){return v.toFixed(1)}}},
+      {type:'value',name:'%',nameTextStyle:{color:'#7d8db0',fontSize:10},min:hlo,max:hhi,
+        splitLine:{show:false},axisLabel:{color:'#7d8db0',fontSize:10}}
     ],
     series:[
       {name:'温度',type:'line',data:padGaps(pts.map(x=>[x.t*1000,x.temp])),yAxisIndex:0,
-        smooth:true,symbol:'none',connectNulls:false,showSymbol:false,
+        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,showSymbol:false,
         lineStyle:{width:2.5,color:'#ff7a6b'},
         itemStyle:{color:'#ff7a6b'},
         areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
           {offset:0,color:'rgba(255,122,107,.18)'},{offset:1,color:'rgba(255,122,107,0)'}]}}},
       {name:'湿度',type:'line',data:padGaps(pts.map(x=>[x.t*1000,x.hum])),yAxisIndex:1,
-        smooth:true,symbol:'none',connectNulls:false,showSymbol:false,
-        lineStyle:{width:2,color:'#3aa0ff'},itemStyle:{color:'#3aa0ff'}}
+        smooth:true,sampling:'lttb',symbol:'none',connectNulls:false,showSymbol:false,
+        lineStyle:{width:2,color:'#43c6ff'},itemStyle:{color:'#43c6ff'}}
     ]
   },true); firstRun=false;
 }
@@ -521,8 +536,8 @@ function drawWeekCharts(){
       ec.setOption({
         backgroundColor:'transparent',animation:true,grid:{left:32,right:8,top:10,bottom:22},
         xAxis:{type:'category',data:week.map(d=>d.day.replace(/^0/,'').replace('-','/')),
-          axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#4a5678',fontSize:9},axisTick:{show:false}},
-        yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:8}},
+          axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#7d8db0',fontSize:9},axisTick:{show:false}},
+        yAxis:{type:'value',min:15,max:35,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
         tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
           textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){var d=week[ps[0].dataIndex];
             return d.day+' 日均 <b style="color:#34d399">'+(d.avg!=null?d.avg:'无')+'</b> ℃（'+d.count+'条）'}},
@@ -539,8 +554,8 @@ function drawWeekCharts(){
     ec.setOption({
       backgroundColor:'transparent',grid:{left:32,right:8,top:10,bottom:22},
       xAxis:{type:'category',data:labels,axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},
-        axisLabel:{color:'#4a5678',fontSize:8,interval:'auto'},axisTick:{show:false}},
-      yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:8}},
+        axisLabel:{color:'#7d8db0',fontSize:10,interval:'auto'},axisTick:{show:false}},
+      yAxis:{type:'value',min:15,max:35,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
       tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(34,211,238,.3)',
         textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){return ps[0].name+' <b style="color:#ff8a7a">'+ps[0].value+'</b> ℃'}},
       series:[{type:'line',data:temps,smooth:true,symbol:'none',
@@ -565,9 +580,9 @@ function drawMs(hist){
     backgroundColor:'transparent',animation:false,
     grid:{left:34,right:14,top:12,bottom:20},
     xAxis:{type:'category',data:times,axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},
-      axisLabel:{color:'#4a5678',fontSize:8},axisTick:{show:false}},
-    yAxis:{type:'value',name:'ms',nameTextStyle:{color:'#4a5678',fontSize:9},
-      splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:8}},
+      axisLabel:{color:'#7d8db0',fontSize:10},axisTick:{show:false}},
+    yAxis:{type:'value',name:'ms',nameTextStyle:{color:'#7d8db0',fontSize:10},
+      splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
     tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
       textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){var h=hist[ps[0].dataIndex];return '延迟 <b style="color:#a78bfa">'+h._v+'</b> ms'}},
     series:[{type:'line',data:vals,smooth:true,symbol:'none',
