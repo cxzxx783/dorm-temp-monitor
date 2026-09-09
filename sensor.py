@@ -172,7 +172,19 @@ class Sensor(threading.Thread):
             except Exception:
                 pass
 
+            last_rssi_refresh = time.time() - 61   # 首次进入循环立即刷一次RSSI
             while not stop_ev.is_set():
+                # 定期刷新信号强度RSSI(连接期间设备废弃广播, 每60s短扫描一次)
+                if time.time() - last_rssi_refresh >= 60:
+                    last_rssi_refresh = time.time()
+                    try:
+                        rssi_dev = await BleakScanner.find_device_by_address(
+                            addr, timeout=2.0)
+                        if rssi_dev and rssi_dev.rssi is not None:
+                            with self._lock:
+                                self._state["rssi"] = rssi_dev.rssi
+                    except Exception:
+                        pass
                 # 数据轮询(优先通知缓存, 再主动读保活)
                 v = newest.get("v")
                 try:
