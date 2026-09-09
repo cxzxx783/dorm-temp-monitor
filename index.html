@@ -6,94 +6,73 @@
 <script src="assets/echarts.min.js"></script>
 <style>
 :root{
-  --bg:#04060f; --text:#e8f0ff; --dim:#7d8db0; --faint:#4a5678;
-  --cyan:#22d3ee; --violet:#8b5cf6; --temp:#ff8a7a; --hum:#38bdf8;
-  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
-  --glass:rgba(14,20,40,.6); --line:rgba(90,140,255,.14);
+  --bg:#0b1120; --text:#e8eefb; --dim:#9aa7c6; --faint:#5c6b8f;
+  --cyan:#3aa0ff; --violet:#9d7bff; --temp:#ff7a6b; --hum:#3aa0ff;
+  --ok:#36c98a; --warn:#f0b14a; --err:#f06a6a;
+  --card:rgba(19,28,50,.85); --line:rgba(150,180,230,.15);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
   color:var(--text); overflow:hidden; user-select:none;
-  background:
-    radial-gradient(1100px 600px at 85% -10%, rgba(34,211,238,.10), transparent 55%),
-    radial-gradient(900px 520px at -5% 110%, rgba(139,92,246,.12), transparent 55%),
-    linear-gradient(170deg,#050914 0%, #04060f 60%, #070a18 100%);}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7), transparent),
-    radial-gradient(1.2px 1.2px at 43% 12%, rgba(150,200,255,.8), transparent),
-    radial-gradient(1px 1px at 61% 44%, rgba(255,255,255,.6), transparent),
-    radial-gradient(1px 1px at 74% 82%, rgba(200,220,255,.7), transparent),
-    radial-gradient(1.5px 1.5px at 92% 62%, rgba(140,180,255,.6), transparent),
-    radial-gradient(1px 1px at 34% 88%, rgba(255,255,255,.4), transparent);
-  animation:twinkle 6s ease-in-out infinite alternate}
-@keyframes twinkle{from{opacity:.55}to{opacity:1}}
+  background:linear-gradient(172deg,#0e1628 0%, #0a101f 55%, #0b1322 100%);}
 
-/* ======= 骨架: 弹性满布, 无空腔 ======= */
 .app{position:relative;z-index:1;height:100vh;padding:14px 18px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
-.scanline{position:absolute;left:0;right:0;height:1px;top:0;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}
-.panel{background:var(--glass);border:1px solid var(--line);border-radius:16px;
-  backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
 
-/* ======= 顶栏 (固定高) ======= */
+/* ======= 通用面板 ======= */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 3px 14px rgba(0,0,0,.28)}
+
+/* ======= 顶栏 ======= */
 .topbar{display:flex;align-items:center;gap:14px;padding:10px 18px;flex:none}
 .logo{width:40px;height:40px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;
-  font-size:20px;background:linear-gradient(135deg,rgba(34,211,238,.9),rgba(139,92,246,.9));box-shadow:0 0 22px rgba(34,211,238,.45)}
-.titles .name{font-size:17px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,#fff,#9fd8ff);
-  -webkit-background-clip:text;background-clip:text;color:transparent}
+  font-size:20px;background:linear-gradient(135deg,#3aa0ff,#8b6cf6)}
+.titles .name{font-size:17px;font-weight:700;letter-spacing:1px}
 .titles .sub{font-size:11px;color:var(--faint);margin-top:2px}
 .right{margin-left:auto;display:flex;align-items:center;gap:14px}
 .clock{text-align:right}.clock .now{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
 .clock .date{font-size:10.5px;color:var(--faint);margin-top:1px}
 .status{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:12.5px;
-  background:rgba(8,12,26,.6);border:1px solid var(--line)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.3s}
-.dot.waiting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15);animation:pulse 1.2s infinite}
-.dot.connecting{background:var(--warn);animation:pulse .7s infinite}
-.dot.connected{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.15),0 0 20px rgba(52,211,153,.6)}
-.dot.reconnecting{background:var(--err);box-shadow:0 0 0 4px rgba(248,113,113,.15);animation:pulse 1s infinite}
+  background:rgba(10,18,34,.6);border:1px solid var(--line)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint);transition:.3s}
+.dot.waiting{background:var(--warn)}.dot.connecting{background:var(--warn)}
+.dot.connected{background:var(--ok)}.dot.reconnecting{background:var(--err);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ======= 控制条 (固定高) ======= */
+/* ======= 控制条 ======= */
 .ctrlbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;flex:none}
 .ctrlabel{font-size:11.5px;color:var(--faint);letter-spacing:1px}
-.rangebtn{padding:6px 14px;border-radius:10px;font-size:12.5px;cursor:pointer;transition:.18s;
-  background:rgba(10,16,32,.6);border:1px solid var(--line);color:var(--dim)}
+.rangebtn{padding:6px 14px;border-radius:9px;font-size:12.5px;cursor:pointer;transition:.18s;
+  background:rgba(12,20,36,.7);border:1px solid var(--line);color:var(--dim)}
 .rangebtn:hover{border-color:var(--cyan);color:#fff}
-.rangebtn.on{background:linear-gradient(135deg,rgba(34,211,238,.28),rgba(139,92,246,.28));
-  border-color:rgba(34,211,238,.6);color:#fff;box-shadow:0 0 16px rgba(34,211,238,.28)}
+.rangebtn.on{background:#22406e;border-color:#3aa0ff;color:#fff}
 .custrange{display:flex;align-items:center;gap:6px}
 .custrange.hidden{display:none}
-input[type=date]{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line);
+input[type=date]{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);
   border-radius:8px;padding:5px 8px;font-size:12px;outline:none;font-family:inherit;color-scheme:dark}
-button{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line);border-radius:9px;
+button{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);border-radius:9px;
   padding:5px 12px;font-size:12px;outline:none;cursor:pointer;transition:.18s;font-family:inherit}
 button:hover{border-color:var(--cyan)}
-select{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line);border-radius:9px;
+select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--line);border-radius:9px;
   padding:5px 9px;font-size:12px;outline:none;font-family:inherit}
 .helpbtn{color:var(--dim)}
 .sp2{flex:1}
 .miniinfo{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
 
-/* ======= 主体: 自适应三栏填满 ======= */
+/* ======= 主体: 三栏填满 ======= */
 .main{flex:1;min-height:360px;display:flex;gap:12px}
-
-/* 左列: 实时 + 温度主卡 (宽度随窗口自适应收缩) */
 .col-left{width:clamp(170px, 21vw, 250px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0}
-.tempcard{position:relative;overflow:hidden;padding:16px 18px;flex:1 1 46%;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
-.tempcard .glow{position:absolute;width:240px;height:240px;border-radius:50%;top:-110px;right:-70px;
-  background:radial-gradient(circle,rgba(255,138,122,.18),transparent 62%)}
+.tempcard{padding:16px 18px;flex:1 1 46%;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
 .tclabel{font-size:11px;color:var(--faint);letter-spacing:2px}
 .tcbig{display:flex;align-items:baseline;gap:6px}
-.tcbig .v{font-size:64px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 36px rgba(255,138,122,.4)}
+.tcbig .v{font-size:62px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums}
 .tcbig .u{font-size:22px;color:var(--dim)}
-.tcface{font-size:28px}
+.tcface{font-size:26px}
 .tccomfy{font-size:11px;color:var(--dim)}
 
 .livepanel{padding:12px 16px;flex:1;min-height:0;display:flex;flex-direction:column}
 .wdtitle{font-size:10.5px;color:var(--faint);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.wdtitle .bar{width:3px;height:12px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.7)}
+.wdtitle .bar{width:3px;height:12px;border-radius:2px;background:var(--cyan)}
 .cells{display:flex;flex-direction:column;gap:9px;flex:1;justify-content:space-evenly}
 .cellrow{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
 .cellrow .cl{color:var(--faint)}
@@ -106,20 +85,16 @@ select{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line
 .sig.l1 i:nth-child(1){background:var(--err)}
 .sig.l2 i:nth-child(-n+2){background:var(--warn)}
 .sig.l3 i{background:var(--cyan)}
-.sig.l4 i{background:var(--ok);box-shadow:0 0 8px rgba(52,211,153,.6)}
+.sig.l4 i{background:var(--ok)}
 .sigtext{font-size:10px;color:var(--dim)}
 
-/* 右列: 统计 + 迷你图 (宽度随窗口自适应收缩) */
 .col-right{width:clamp(180px, 23vw, 280px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0}
 @media (max-width: 960px){
-  .tcbig .v{font-size:52px}
-  .statcell .sv{font-size:17px}
-  .cellrow{font-size:12px}
-  .bottom{height:140px}
+  .tcbig .v{font-size:48px}.statcell .sv{font-size:16px}.cellrow{font-size:12px}.bottom{height:130px}
 }
 .statgrid{flex:0 0 52%;padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:0}
 .statcell{display:flex;flex-direction:column;justify-content:center;padding:6px 10px;
-  background:rgba(8,12,26,.45);border:1px solid var(--line);border-radius:11px}
+  background:rgba(10,18,34,.5);border:1px solid var(--line);border-radius:10px}
 .statcell .sl{font-size:10px;color:var(--faint)}
 .statcell .sv{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
 .statcell .ss{margin-top:1px;font-size:9.5px;color:var(--faint)}
@@ -130,39 +105,37 @@ select{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line
 /* 中间: 主趋势图(撑满) */
 .col-center{flex:1;min-width:0;display:flex;flex-direction:column;padding:12px 14px 10px;position:relative}
 .charttitle{font-size:10.5px;color:var(--faint);letter-spacing:1.5px;display:flex;align-items:center;gap:6px;flex:none}
-.charttitle .bar{width:3px;height:12px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.7)}
+.charttitle .bar{width:3px;height:12px;border-radius:2px;background:var(--cyan)}
 .charttitle em{font-style:normal;color:var(--dim)}
 .seg{margin-left:auto;display:flex;gap:14px}
 .seg i{font-style:normal;font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px}
 .seg i::before{content:"";width:16px;height:3px;border-radius:2px}
-.seg .t::before{background:var(--temp);box-shadow:0 0 8px rgba(255,138,122,.7)}
-.seg .h::before{background:var(--hum);box-shadow:0 0 8px rgba(56,189,248,.6)}
+.seg .t::before{background:var(--temp)}.seg .h::before{background:var(--hum)}
 #mainChart{flex:1;min-height:0}
 
-/* 底部: 近7天 + 近30天 */
+/* 底部: 日均温 */
 .bottom{flex:none;height:clamp(110px, 20vh, 180px);display:flex;gap:12px;min-height:0}
 .bottom .panel{flex:1;padding:10px 14px 6px;position:relative;min-width:0}
 .minichart{position:absolute;top:30px;left:8px;right:8px;bottom:6px}
 
 /* 浮层说明 */
-.overlay{position:fixed;inset:0;z-index:100;background:rgba(2,4,10,.74);backdrop-filter:blur(8px);
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(4,8,18,.78);backdrop-filter:blur(6px);
   display:none;align-items:center;justify-content:center}
 .overlay.show{display:flex}
-.overlay .box{width:720px;max-width:92vw;max-height:86vh;overflow:auto;background:#0a1020;
-  border:1px solid var(--line);border-radius:18px;padding:26px 30px;box-shadow:0 30px 80px rgba(0,0,0,.7)}
-.overlay .box h2{font-size:18px;letter-spacing:1px;margin-bottom:16px;
-  background:linear-gradient(90deg,#fff,#9fd8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.overlay .box{width:720px;max-width:92vw;max-height:86vh;overflow:auto;background:#101828;
+  border:1px solid var(--line);border-radius:16px;padding:26px 30px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.overlay .box h2{font-size:18px;letter-spacing:1px;margin-bottom:16px}
 .overlay .box h3{font-size:13px;color:var(--cyan);margin:16px 0 8px}
 .overlay .box p,.overlay .box li{font-size:12.5px;line-height:1.8;color:var(--dim)}
 .overlay .box li{margin-left:18px}
 .overlay .box table{width:100%;border-collapse:collapse;margin:8px 0}
 .overlay .box td,.overlay .box th{border:1px solid var(--line);padding:6px 10px;font-size:12px;color:var(--dim);text-align:left}
-.overlay .box th{color:#9fd8ff;font-weight:600}
+.overlay .box th{color:#cfe0ff;font-weight:600}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="scanline"></div>
+  
 
   <!-- 顶栏 -->
   <div class="panel topbar">
@@ -202,7 +175,6 @@ select{background:rgba(8,12,26,.7);color:var(--text);border:1px solid var(--line
     <!-- 左: 温度主卡 + 实时 -->
     <div class="col-left">
       <div class="panel tempcard">
-        <div class="glow"></div>
         <div class="tclabel">室 温</div>
         <div class="tcbig"><span class="v" id="tcTemp">--</span><span class="u">℃</span></div>
         <div><span class="tcface" id="tcFace">😐</span><span class="tccomfy" id="tcComfy">等待数据…</span></div>
@@ -396,14 +368,14 @@ async function drawMain(){
     ],
     series:[
       {name:'温度',type:'line',data:pts.map(x=>[x.t*1000,x.temp]),yAxisIndex:0,
-        smooth:0.6,symbol:'none',connectNulls:false,
-        lineStyle:{width:3,color:'#ff8a7a',shadowBlur:14,shadowColor:'rgba(255,138,122,.55)'},
-        itemStyle:{color:'#ff8a7a'},
+        smooth:true,symbol:'none',connectNulls:false,
+        lineStyle:{width:2.5,color:'#ff7a6b'},
+        itemStyle:{color:'#ff7a6b'},
         areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
-          {offset:0,color:'rgba(255,138,122,.22)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
+          {offset:0,color:'rgba(255,122,107,.18)'},{offset:1,color:'rgba(255,122,107,0)'}]}}},
       {name:'湿度',type:'line',data:pts.map(x=>[x.t*1000,x.hum]),yAxisIndex:1,
-        smooth:0.6,symbol:'none',connectNulls:false,
-        lineStyle:{width:2,color:'#38bdf8',shadowBlur:10,shadowColor:'rgba(56,189,248,.45)'},itemStyle:{color:'#38bdf8'}}
+        smooth:true,symbol:'none',connectNulls:false,
+        lineStyle:{width:2,color:'#3aa0ff'},itemStyle:{color:'#3aa0ff'}}
     ]
   },true); firstRun=false;
 }
