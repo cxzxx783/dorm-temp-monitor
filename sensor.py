@@ -164,10 +164,13 @@ class Sensor(threading.Thread):
                 # 数据轮询(优先通知缓存, 再主动读保活)
                 v = newest.get("v")
                 try:
+                    t0 = time.perf_counter()
                     raw = await client.read_gatt_char(self.DATA_CHAR)
                     got = parse(bytes(raw))
                     if got:
                         v = got
+                    with self._lock:
+                        self._state["read_ms"] = int((time.perf_counter() - t0) * 1000)
                 except Exception:
                     if not client.is_connected:
                         break

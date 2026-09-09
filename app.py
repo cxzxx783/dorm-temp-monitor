@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-宿舍温湿度管家 - 桌面版 v1.1
-运行: python app.py
+宿舍温湿度管家 - 桌面版 v1.2
+- 历史数据跨天留存, 启动自动加载, 日期切换查看
+- 实时采集 + 界面秒级刷新
+- 信号强度: 连接RSSI + 读取延迟毫秒
+运行: python app.py  (或打包后的exe)
 """
 import os, threading, datetime
 import webview
 from sensor import Sensor, DEFAULT_LOG_DIR
 from paths import resource_dir, load_saved_mac
+import history as hist
 
 DEVICE_NAME = "MJWSD06MMC"         # 温湿度计型号名
-DEVICE_MAC = load_saved_mac()      # 从本地记忆读取(隐私: 不入代码/不入库)
+DEVICE_MAC = load_saved_mac()      # 本地记忆(隐私不入代码)
 DATA_DIR = DEFAULT_LOG_DIR
 
 class Api:
     def __init__(self):
-        self.history = []
+        self.live = []              # 本次运行的实时点(防重)
         self._lock = threading.Lock()
         self._window = None
-        self._start_time = None
         self.sensor = Sensor(device_name=DEVICE_NAME, mac=DEVICE_MAC,
                              interval=30.0, log_dir=DATA_DIR,
                              on_event=self._on_event)
@@ -31,50 +34,65 @@ class Api:
             try:
                 epoch = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S").timestamp()
             except Exception:
-                epoch = datetime.datetime.now().timestamp()
+                return
             with self._lock:
-                self.history.append({"t": epoch, "temp": float(row[1]), "hum": float(row[2])})
-                if len(self.history) > 20000:
-                    del self.history[: len(self.history) - 20000]
+                self.live.append({"t": epoch, "temp": float(row[1]), "hum": float(row[2])})
+                if len(self.live) > 20000:
+                    del self.live[: len(self.live) - 20000]
+
+    # ============ 界面接口 ============
 
     def get_snapshot(self):
         st = self.sensor.snapshot()
         last = st.get("last")
-        with self._lock:
-            hist = self.history[-300:]
-        temps = [p["temp"] for p in hist] or [0]
-        hums = [p["hum"] for p in hist] or [0]
-        def stat(vals):
-            return {"avg": round(sum(vals)/len(vals), 1),
-                    "max": round(max(vals), 1),
-                    "min": round(min(vals), 1)}
-        # 运行时长
         uptime = None
-        if self.sensor._state.get("session_start"):
+        if st.get("session_start"):
             try:
-                st0 = datetime.datetime.strptime(
-                    self.sensor._state["session_start"], "%H:%M:%S").replace(
-                    year=datetime.date.today().year,
-                    month=datetime.date.today().month,
-                    day=datetime.date.today().day)
-                uptime = int((datetime.datetime.now() - st0).total_seconds())
+                s0 = datetime.datetime.strptime(st["session_start"], "%H:%M:%S")
+                now = datetime.datetime.now()
+                s0 = s0.replace(year=now.year, month=now.month, day=now.day)
+                uptime = int((now - s0).total_seconds())
             except Exception:
-                uptime = None
+                pass
         return {
             "status": st.get("status"),
             "connected": st.get("connected"),
             "addr": st.get("addr"),
             "rssi": st.get("rssi"),
+            "read_ms": st.get("read_ms"),
             "count": st.get("count", 0),
-            "lost": st.get("lost", 0),
             "last": last,
             "interval": self.sensor.interval,
-            "history": hist,
-            "temp_stat": stat(temps),
-            "hum_stat": stat(hums),
             "uptime": uptime,
             "csv": st.get("csv"),
         }
+
+    def get_days(self):
+        """可用历史日期列表(倒序)"""
+        return hist.list_days(DATA_DIR)
+
+    def get_day(self, day):
+        """某天全部记录点"""
+        return hist.load_day(DATA_DIR, day)
+
+    def get_day_stats(self, day):
+        return hist.day_stats(self.get_day(day))
+
+    def get_live(self):
+        """本次运行的全部点"""
+        with self._lock:
+            return list(self.live)
+
+    def get_week(self):
+        """近7天每日统计(含空缺天)"""
+        today = datetime.date.today()
+        out = []
+        for i in range(6, -1, -1):
+            d = (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            st = hist.day_stats(hist.load_day(DATA_DIR, d))
+            out.append({"day": d[5:], "avg": st["avg"] if st else None,
+                        "count": st["count"] if st else 0})
+        return out
 
     def start(self):
         if not self.sensor.is_alive():
@@ -89,6 +107,11 @@ class Api:
         self._restart_sensor()
         return "ok"
 
+    def quit(self):
+        self.sensor.stop()
+        if self._window:
+            self._window.destroy()
+
     def _restart_sensor(self):
         self.sensor.stop()
         self.sensor = Sensor(device_name=DEVICE_NAME, mac=DEVICE_MAC,
@@ -96,19 +119,14 @@ class Api:
                              log_dir=DATA_DIR, on_event=self._on_event)
         self.sensor.start()
 
-    def quit(self):
-        self.sensor.stop()
-        if self._window:
-            self._window.destroy()
-
 def main():
-    base = resource_dir()   # 打包后自动指向解压资源目录
+    base = resource_dir()
     api = Api()
     window = webview.create_window(
         "宿舍温湿度管家",
         os.path.join(base, "index.html"),
-        width=1160, height=780, min_size=(1000, 680),
-        js_api=api, background_color="#0a0e1a")
+        width=1180, height=820, min_size=(720, 520),   # 允许拉小到半屏
+        js_api=api, background_color="#04060f")
     api.set_window(window)
     webview.start(gui="edgechromium")
 

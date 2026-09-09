@@ -5,324 +5,448 @@
 <title>宿舍温湿度管家</title>
 <script src="assets/echarts.min.js"></script>
 <style>
-  :root {
-    --bg-a:#070b14; --bg-b:#0d1526;
-    --card:rgba(17,25,44,.72); --card-line:rgba(120,150,200,.14);
-    --text:#e8edf6; --dim:#8a97b3; --faint:#5a6886;
-    --accent:#5aa7ff; --accent2:#8b5cf6;
-    --temp:#ff8a7a; --hum:#5fb8ff; --ok:#3ddc97; --warn:#ffc24d; --err:#ff6b81;
-    --radius:18px;
-  }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body {
-    font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
-    color:var(--text); height:100vh; overflow:hidden; user-select:none;
-    background:
-      radial-gradient(900px 500px at 82% -12%, rgba(90,137,255,.16), transparent 60%),
-      radial-gradient(700px 460px at -10% 108%, rgba(139,92,246,.12), transparent 60%),
-      linear-gradient(165deg, var(--bg-a), var(--bg-b));
-  }
-  .wrap { display:flex; flex-direction:column; height:100vh; padding:20px 24px; gap:14px; }
+:root{
+  --bg:#04060f; --text:#e8f0ff; --dim:#7d8db0; --faint:#4a5678;
+  --cyan:#22d3ee; --violet:#8b5cf6; --pink:#f472b6; --temp:#ff8a7a; --hum:#38bdf8;
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --glass:rgba(14,20,40,.55); --line:rgba(90,140,255,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"HarmonyOS Sans SC","Microsoft YaHei UI","Segoe UI",sans-serif;
+  color:var(--text); height:100vh; overflow:hidden; user-select:none;
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(34,211,238,.10), transparent 55%),
+    radial-gradient(900px 520px at -5% 110%, rgba(139,92,246,.12), transparent 55%),
+    linear-gradient(170deg,#050914 0%, #04060f 60%, #070a18 100%);
+}
+/* 星点背景 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1px 1px at 28% 68%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1.5px 1.5px at 43% 12%, rgba(150,200,255,.8), transparent),
+    radial-gradient(1px 1px at 61% 44%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1.2px 1.2px at 74% 82%, rgba(200,220,255,.7), transparent),
+    radial-gradient(1px 1px at 88% 25%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 34% 88%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1.5px 1.5px at 92% 62%, rgba(140,180,255,.6), transparent),
+    radial-gradient(1px 1px at 8% 78%, rgba(255,255,255,.4), transparent);
+  animation:twinkle 6s ease-in-out infinite alternate;}
+@keyframes twinkle{from{opacity:.55}to{opacity:1}}
+.wrap{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:16px 20px;gap:12px}
 
-  /* ======== 顶栏 ======== */
-  .topbar {
-    display:flex; align-items:center; gap:14px;
-    background:var(--card); border:1px solid var(--card-line);
-    border-radius:var(--radius); padding:14px 20px;
-    backdrop-filter:blur(14px); box-shadow:0 10px 34px rgba(0,0,0,.4);
-  }
-  .logo { width:40px; height:40px; border-radius:12px; position:relative; flex:none;
-    background:linear-gradient(135deg, rgba(90,137,255,.9), rgba(139,92,246,.85));
-    box-shadow:0 6px 20px rgba(90,137,255,.4); display:flex; align-items:center; justify-content:center;
-    font-size:20px; }
-  .logo::after { content:""; position:absolute; inset:0; border-radius:12px;
-    background:linear-gradient(120deg, rgba(255,255,255,.25), transparent 45%); }
-  .titles .name { font-size:17px; font-weight:600; letter-spacing:.6px; }
-  .titles .sub { font-size:11.5px; color:var(--dim); margin-top:3px; letter-spacing:.4px; }
+/* ===== 光环装饰线 ===== */
+.scanline{position:absolute;left:0;right:0;height:1px;top:0;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}
+.topbar{position:relative;display:flex;align-items:center;gap:14px;
+  background:var(--glass);border:1px solid var(--line);border-radius:16px;
+  padding:12px 18px;backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05)}
+.logo{position:relative;width:40px;height:40px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:linear-gradient(135deg,rgba(34,211,238,.9),rgba(139,92,246,.9));
+  box-shadow:0 0 22px rgba(34,211,238,.45),0 0 44px rgba(139,92,246,.25)}
+.logo::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(120deg,rgba(255,255,255,.3),transparent 45%)}
+.titles .name{font-size:16px;font-weight:700;letter-spacing:1.5px;
+  background:linear-gradient(90deg,#fff,#9fd8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.titles .sub{font-size:11px;color:var(--faint);margin-top:2px;letter-spacing:.5px}
+.right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.clock{text-align:right}.clock .now{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.clock .date{font-size:10.5px;color:var(--faint);margin-top:1px}
+.status{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:12.5px;
+  background:rgba(8,12,26,.6);border:1px solid var(--line)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.3s}
+.dot.waiting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15),0 0 18px rgba(251,191,36,.5);animation:pulse 1.2s infinite}
+.dot.connecting{background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15),0 0 18px rgba(251,191,36,.5);animation:pulse .7s infinite}
+.dot.connected{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.15),0 0 20px rgba(52,211,153,.65)}
+.dot.reconnecting{background:var(--err);box-shadow:0 0 0 4px rgba(248,113,113,.15),0 0 18px rgba(248,113,113,.5);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  .right { margin-left:auto; display:flex; align-items:center; gap:14px; }
-  .clock { text-align:right; }
-  .clock .now { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:1px; }
-  .clock .date { font-size:11px; color:var(--faint); margin-top:2px; }
+/* ===== 日期切换 ===== */
+.days{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none}
+.daybtn{flex:none;padding:7px 16px;border-radius:11px;font-size:12.5px;cursor:pointer;transition:.18s;
+  background:rgba(10,16,32,.55);border:1px solid var(--line);color:var(--dim)}
+.daybtn:hover{border-color:var(--cyan);color:var(--text)}
+.daybtn.on{background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(139,92,246,.22));
+  border-color:rgba(34,211,238,.55);color:#fff;box-shadow:0 0 16px rgba(34,211,238,.22)}
+.metachips{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:9px;
+  background:rgba(10,16,32,.5);border:1px solid var(--line);color:var(--dim)}
+.chip b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+.chip .tt{color:var(--faint)}
 
-  .status { display:flex; align-items:center; gap:9px; padding:9px 16px;
-    border-radius:999px; font-size:13px; border:1px solid var(--card-line);
-    background:rgba(10,16,30,.5); }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--faint);
-    box-shadow:0 0 0 0 rgba(0,0,0,.4); transition:.3s; }
-  .dot.waiting{ background:var(--warn); box-shadow:0 0 0 4px rgba(255,194,77,.16); animation:pulse 1.3s infinite; }
-  .dot.connecting{ background:var(--warn); box-shadow:0 0 0 4px rgba(255,194,77,.16); animation:pulse .8s infinite; }
-  .dot.connected{ background:var(--ok); box-shadow:0 0 0 4px rgba(61,220,151,.16), 0 0 14px rgba(61,220,151,.45); }
-  .dot.reconnecting{ background:var(--err); box-shadow:0 0 0 4px rgba(255,107,129,.16); animation:pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+/* ===== 主数据 ===== */
+.hero{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;flex:none}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(16px);
+  box-shadow:0 8px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04)}
+.big{position:relative;overflow:hidden;padding:16px 26px;display:flex;align-items:center;gap:28px}
+.big .glow{position:absolute;width:300px;height:300px;border-radius:50%;top:-120px;right:-80px;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,138,122,.14),transparent 62%)}
+.tcell .lb{font-size:11px;color:var(--faint);letter-spacing:2px;margin-bottom:6px}
+.tcell .bigv{display:flex;align-items:baseline;gap:6px}
+.tcell .bigv .v{font-size:58px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:1px;
+  text-shadow:0 0 30px rgba(255,138,122,.35)}
+.tcell .bigv .u{font-size:20px;color:var(--dim)}
+.comfy{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px}
+.comfy .face{font-size:26px}
+.verttable{display:flex;flex-direction:column;gap:7px;min-width:150px}
+.vrow{display:flex;align-items:baseline;gap:10px}
+.vrow .vl{font-size:11.5px;color:var(--faint);width:52px}
+.vrow .vv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.vrow .vu{font-size:11px;color:var(--dim)}
+.vrow.hum .vv{color:var(--hum)}.vrow.volt .vv{color:var(--violet)}
+.vrow.uptime .vv{color:var(--ok)}
+.sig{display:flex;align-items:center;gap:3px}
+.sig i{width:3.5px;border-radius:2px;background:rgba(255,255,255,.12);display:inline-block}
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:10px}.sig i:nth-child(3){height:14px}.sig i:nth-child(4){height:18px}
+.sig.l1 i:nth-child(1){background:var(--err)}
+.sig.l2 i:nth-child(-n+2){background:var(--warn)}
+.sig.l3 i{background:var(--cyan)}
+.sig.l4 i{background:var(--ok);box-shadow:0 0 8px rgba(52,211,153,.6)}
 
-  /* ======== 主数据区 ======== */
-  .hero { display:grid; grid-template-columns:1.15fr 1fr; gap:14px; }
-  .panel { background:var(--card); border:1px solid var(--card-line);
-    border-radius:var(--radius); backdrop-filter:blur(14px);
-    box-shadow:0 10px 30px rgba(0,0,0,.35); }
+.sidegrid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px}
+.cell{padding:13px 18px;display:flex;flex-direction:column;justify-content:center}
+.cell .lb{font-size:10.5px;color:var(--faint);letter-spacing:1px}
+.cell .mainv{margin-top:6px;font-size:23px;font-weight:600;font-variant-numeric:tabular-nums}
+.cell .mainv small{font-size:12px;color:var(--dim);font-weight:500}
+.cell .subv{margin-top:4px;font-size:10.5px;color:var(--faint)}
+.subchips{display:flex;gap:6px;margin-top:8px}
+.subchips span{font-size:10.5px;padding:2px 8px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--dim)}
+.subchips b{color:var(--text)}
 
-  .big-temp { padding:20px 26px; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden; }
-  .big-temp .glow { position:absolute; width:260px; height:260px; border-radius:50%;
-    background:radial-gradient(circle, rgba(255,138,122,.16), transparent 65%); top:-90px; right:-60px; }
-  .big-temp .row { display:flex; align-items:flex-end; gap:14px; position:relative; }
-  .big-temp .num { font-size:64px; font-weight:200; line-height:1; letter-spacing:1px;
-    font-variant-numeric:tabular-nums; }
-  .big-temp .unit { font-size:22px; color:var(--dim); margin-bottom:10px; }
-  .big-temp .verts { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
-  .big-temp .verts .v { display:flex; align-items:baseline; gap:8px; }
-  .big-temp .verts .vl { font-size:12px; color:var(--faint); width:52px; }
-  .big-temp .verts .vv { font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; }
-  .big-temp .verts .vv.hum { color:var(--hum); }
-  .big-temp .meta { position:relative; margin-top:12px; font-size:11.5px; color:var(--faint); letter-spacing:.3px; }
+/* ===== 图表 ===== */
+.chartpanel{flex:1;min-height:0;display:flex;flex-direction:column;padding:8px 6px 2px;position:relative}
+.charthead{display:flex;align-items:center;padding:4px 14px 0}
+.charthead .tt{font-size:12.5px;font-weight:600;letter-spacing:1px;color:var(--dim)}
+.charthead .tt em{font-style:normal;color:var(--faint)}
+.seg{display:flex;gap:14px}
+.seg i{font-style:normal;font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px}
+.seg i::before{content:"";width:16px;height:3px;border-radius:2px}
+.seg .t::before{background:var(--temp);box-shadow:0 0 8px rgba(255,138,122,.7)}
+.seg .h::before{background:var(--hum);box-shadow:0 0 8px rgba(56,189,248,.6)}
+#chart{flex:1;min-height:0}
 
-  .sidegrid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:14px; }
-  .cell { padding:14px 20px; display:flex; flex-direction:column; justify-content:center; }
-  .cell .lb { font-size:11.5px; color:var(--faint); letter-spacing:.6px; display:flex; align-items:center; gap:6px; }
-  .cell .lb .ic { font-size:13px; }
-  .cell .val { margin-top:8px; font-size:28px; font-weight:600; font-variant-numeric:tabular-nums; }
-  .cell .val small { font-size:14px; color:var(--dim); font-weight:500; }
-  .cell .sub { margin-top:5px; font-size:11px; color:var(--faint); }
+/* 周概览 */
+.weekrow{display:grid;grid-template-columns:.9fr 50px 1.6fr;gap:12px;align-items:stretch}
+.weeknote{display:flex;flex-direction:column;justify-content:center;padding:10px 20px}
+.weeknote .tt{font-size:11px;color:var(--faint);letter-spacing:1px}
+.weeknote .v{margin-top:5px;font-size:20px;font-weight:600;color:var(--ok)}
+.weeknote .s{font-size:10.5px;color:var(--faint);margin-top:3px}
+.weekmini{height:64px;padding:4px 10px}
 
-  .range { display:flex; gap:10px; margin-top:10px; }
-  .range span { font-size:11.5px; padding:3px 10px; border-radius:99px;
-    background:rgba(255,255,255,.05); border:1px solid var(--card-line); color:var(--dim); }
-  .range b { color:var(--text); font-weight:600; }
-
-  /* ======== 图表 ======== */
-  .chart-panel { flex:1; min-height:0; padding:10px 8px 4px; display:flex; flex-direction:column; }
-  .chart-head { display:flex; align-items:center; padding:6px 14px 2px; }
-  .chart-head .tt { font-size:13px; font-weight:600; color:var(--dim); letter-spacing:.5px; }
-  .chart-head .seg { margin-left:auto; display:flex; gap:6px; }
-  .chart-head .seg i { font-style:normal; font-size:11px; color:var(--faint); display:flex; align-items:center; gap:5px; }
-  .chart-head .seg i::before { content:""; width:14px; height:3px; border-radius:2px; }
-  .chart-head .seg .t::before { background:var(--temp); }
-  .chart-head .seg .h::before { background:var(--hum); }
-  #chart { flex:1; min-height:0; }
-
-  /* ======== 底部控制 ======== */
-  .footbar { display:flex; align-items:center; gap:14px; padding:12px 20px; flex-wrap:wrap; }
-  .ft { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--dim); }
-  select, button { background:rgba(10,16,30,.6); color:var(--text);
-    border:1px solid var(--card-line); border-radius:10px; padding:7px 13px;
-    font-size:12.5px; outline:none; cursor:pointer; transition:.18s; font-family:inherit; }
-  select:hover, button:hover { border-color:rgba(90,167,255,.5); }
-  button.ghost { display:flex; align-items:center; gap:6px; }
-  .ft-spacer { flex:1; }
-  .csvpath { font-size:11px; color:var(--faint); max-width:420px; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap; }
+/* 底部 */
+.footbar{display:flex;align-items:center;gap:12px;padding:10px 18px;flex-wrap:wrap}
+.ft{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
+select,button{background:rgba(8,12,26,.65);color:var(--text);border:1px solid var(--line);
+  border-radius:9px;padding:6px 12px;font-size:12px;outline:none;cursor:pointer;transition:.18s;font-family:inherit}
+select:hover,button:hover{border-color:var(--cyan)}
+.sp2{flex:1}
+.csvpath{font-size:10.5px;color:var(--faint);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="scanline"></div>
 
   <!-- 顶栏 -->
   <div class="topbar">
     <div class="logo">🌡️</div>
     <div class="titles">
       <div class="name">宿舍温湿度管家</div>
-      <div class="sub">小米温湿度计 3 mini · MJWSD06MMC</div>
+      <div class="sub">Xiaomi Temp&Humidity Monitor 3 mini</div>
     </div>
     <div class="right">
-      <div class="clock">
-        <div class="now" id="clock">--:--:--</div>
-        <div class="date" id="date">----</div>
-      </div>
+      <div class="clock"><div class="now" id="clock">--:--:--</div><div class="date" id="date">----</div></div>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">启动中…</span></div>
     </div>
   </div>
 
-  <!-- 主数据区 -->
+  <!-- 日期 + 指标 -->
+  <div class="days" id="daysBar"></div>
+
+  <!-- 主数据 -->
   <div class="hero">
-    <div class="panel big-temp">
+    <div class="panel big">
       <div class="glow"></div>
-      <div class="row">
-        <div>
-          <div style="font-size:11.5px;color:var(--faint);letter-spacing:1px;margin-bottom:8px;">室 温</div>
-          <span class="num" id="curTemp">--</span><span class="unit"> ℃</span>
-        </div>
-        <div class="verts">
-          <div class="v"><span class="vl">湿度</span><span class="vv hum" id="curHum">--</span><span style="font-size:12px;color:var(--dim)">%</span></div>
-          <div class="v"><span class="vl">电压</span><span class="vv" id="curVolt">--</span><span style="font-size:12px;color:var(--dim)">V</span></div>
-          <div class="v"><span class="vl">已连接</span><span class="vv" id="uptime" style="color:var(--ok)">--</span></div>
-        </div>
+      <div class="tcell">
+        <div class="lb">室 温</div>
+        <div class="bigv"><span class="v" id="curTemp">--</span><span class="u">℃</span></div>
+        <div class="comfy"><span class="face" id="face">😐</span><span id="comfyText">等待数据…</span></div>
       </div>
-      <div class="meta" id="bigMeta">等待首条记录…</div>
+      <div class="verttable">
+        <div class="vrow hum"><span class="vl">湿度</span><span class="vv" id="curHum">--</span><span class="vu">%</span></div>
+        <div class="vrow volt"><span class="vl">电压</span><span class="vv" id="curVolt">--</span><span class="vu">V</span></div>
+        <div class="vrow uptime"><span class="vl">连续</span><span class="vv" id="uptime">--</span></div>
+        <div class="vrow"><span class="vl">信号</span><span class="sig" id="sigbar"></span><span id="sigText" style="font-size:11px;color:var(--dim)">--</span></div>
+        <div class="vrow"><span class="vl">延迟</span><span class="vv" id="latency" style="font-size:14px">--</span><span class="vu">ms</span></div>
+      </div>
     </div>
 
     <div class="sidegrid">
       <div class="panel cell">
-        <div class="lb"><span class="ic">📈</span>温度统计</div>
-        <div class="val" id="tempStatVal">--</div>
-        <div class="range">
-          <span>均<b id="tAvg">--</b></span>
-          <span>高<b id="tMax">--</b></span>
-          <span>低<b id="tMin">--</b></span>
-        </div>
+        <div class="lb">今日温度 · 高/低</div>
+        <div class="mainv"><span id="ttHigh">--</span><small> ℃</small></div>
+        <div class="subv">最高 <b id="ttHighAt" style="color:var(--temp)">--</b> · 最低 <b id="ttLowAt" style="color:var(--hum)">--</b></div>
       </div>
       <div class="panel cell">
-        <div class="lb"><span class="ic">💧</span>湿度统计</div>
-        <div class="val" id="humStatVal">--</div>
-        <div class="range">
-          <span>均<b id="hAvg">--</b></span>
-          <span>高<b id="hMax">--</b></span>
-          <span>低<b id="hMin">--</b></span>
-        </div>
+        <div class="lb">今日湿度 · 区间</div>
+        <div class="mainv"><span id="hhRange" style="color:var(--hum)">--</span><small> %</small></div>
+        <div class="subv">平均 <b id="hhAvg">--</b>% · 极差 <b id="hhDiff">--</b>%</div>
       </div>
       <div class="panel cell">
-        <div class="lb"><span class="ic">🔋</span>电池</div>
-        <div class="val" id="battVal">--</div>
-        <div class="sub" id="battHint">电量信息</div>
+        <div class="lb">本日采集</div>
+        <div class="mainv"><span id="dayCount">0</span><small> 条</small></div>
+        <div class="subv" id="dayCountNote">等待数据</div>
       </div>
       <div class="panel cell">
-        <div class="lb"><span class="ic">🗂️</span>本次记录</div>
-        <div class="val" id="countVal">0</div>
-        <div class="sub" id="lastRec">等待数据</div>
+        <div class="lb">温度 平均</div>
+        <div class="mainv"><span id="ttAvg">--</span><small> ℃</small></div>
+        <div class="subv">本次运行 <b id="runCount">0</b> 条 · 掉线找回 <b id="lostCount">0</b> 次</div>
       </div>
     </div>
   </div>
 
-  <!-- 图表 -->
-  <div class="panel chart-panel">
-    <div class="chart-head">
-      <span class="tt">实时趋势</span>
-      <span class="seg"><i class="t">温度</i><i class="h">湿度</i></span>
+  <!-- 主图 -->
+  <div class="panel chartpanel">
+    <div class="charthead">
+      <span class="tt">实时趋势 <em id="chartDay">-</em></span>
+      <span class="seg" style="margin-left:auto"><i class="t">温度</i><i class="h">湿度</i></span>
     </div>
     <div id="chart"></div>
+  </div>
+
+  <!-- 近7天 -->
+  <div class="weekrow">
+    <div class="panel weeknote">
+      <div class="tt">近7天日均温</div>
+      <div class="v" id="weekAvg">--</div>
+      <div class="s" id="weekNote">数据积累中…</div>
+    </div>
+    <div class="panel" style="background:linear-gradient(135deg,rgba(34,211,238,.12),rgba(139,92,246,.12))"></div>
+    <div class="panel chartpanel" style="min-height:0">
+      <div id="weekChart" class="weekmini"></div>
+    </div>
   </div>
 
   <!-- 底部 -->
   <div class="panel footbar">
     <div class="ft">采样
       <select id="intervalSel">
-        <option value="6">6 秒</option>
-        <option value="15">15 秒</option>
+        <option value="6">6 秒</option><option value="15">15 秒</option>
         <option value="30" selected>30 秒（推荐）</option>
-        <option value="60">60 秒</option>
-        <option value="300">5 分钟</option>
+        <option value="60">60 秒</option><option value="300">5 分钟</option>
       </select>
     </div>
-    <button id="btnRescan" class="ghost" onclick="rescan()">↻ 重新连接</button>
-    <div class="ft-spacer"></div>
-    <div class="csvpath" id="csvPath" title="数据文件位置">data/…</div>
+    <button onclick="rescan()">↻ 重新连接</button>
+    <div class="sp2"></div>
+    <div class="csvpath" id="csvPath">数据保存在 exe 旁 data/ 文件夹</div>
   </div>
 </div>
 
 <script>
-  var chart = echarts.init(document.getElementById('chart'));
-  var firstRun = true;
+var chart = echarts.init(document.getElementById('chart'));
+var weekChart = echarts.init(document.getElementById('weekChart'));
+var firstRun = true;
+var CUR_DAY = null;          // 当前选中日期
+var DAY_POINTS = [];         // 选中日期的历史点
+var REFRESHING = false;
 
-  function statusMap(s){
-    return { idle:'待机', waiting:'寻找设备…', found:'已找到，连接中…',
-             connecting:'连接中…', connected:'连接稳定，采集中',
-             reconnecting:'掉线，自动找回中…', session_end:'会话结束', disconnected:'已断开' }[s]||s||'未知';
-  }
-  function dotType(s){
-    if(s==='connected') return 'connected';
-    if(s==='waiting'||s==='found'||s==='connecting') return 'connecting';
-    return 'reconnecting';
-  }
-  function p(n){return n<10?'0'+n:n}
-  function fmtClock(sec){var d=new Date(sec*1000);return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
-  function fmtDur(sec){
-    if(sec==null)return;
-    var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);
-    return h>0? h+'h '+p(m)+'m' : p(m)+'m '+p(sec%60)+'s';
-  }
+function p(n){return n<10?'0'+n:n}
+function fmtClock(sec){var d=new Date(sec*1000);return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
+function fmtDur(sec){if(sec==null)return'--';var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);
+  return h>0?h+'h '+p(m)+'m':p(m)+'m'+p(sec%60)+'s'}
+function fmtDay(day){var d=new Date(day+'T00:00');return d.getMonth()+1+'/'+d.getDate()}
+function statusMap(s){return{idle:'待机',waiting:'寻找设备…',found:'已找到，连接中…',connecting:'连接中…',
+  connected:'连接稳定 · 采集中',reconnecting:'掉线 · 自动找回中…',session_end:'会话结束',disconnected:'已断开'}[s]||s||'未知'}
+function dotType(s){if(s==='connected')return'connected';
+  if(s==='waiting'||s==='found'||s==='connecting')return'connecting';return'reconnecting'}
 
-  function renderChart(hist){
-    var times=hist.map(x=>fmtClock(x.t)), temps=hist.map(x=>x.temp), hums=hist.map(x=>x.hum);
-    chart.setOption({
-      backgroundColor:'transparent',
-      animation:firstRun,
-      grid:{left:46,right:50,top:18,bottom:24},
-      tooltip:{trigger:'axis',backgroundColor:'rgba(13,21,38,.92)',
-        borderColor:'rgba(120,150,200,.25)',textStyle:{color:'#e8edf6',fontSize:12}},
-      legend:{data:['温度','湿度'],top:0,right:6,itemWidth:14,itemHeight:3,
-        textStyle:{color:'#8a97b3',fontSize:11}},
-      xAxis:{type:'category',data:times,boundaryGap:false,
-        axisLine:{lineStyle:{color:'rgba(120,150,200,.2)'}},axisLabel:{color:'#5a6886',fontSize:11},
-        axisTick:{show:false}},
-      yAxis:[
-        {type:'value',name:'℃',nameTextStyle:{color:'#5a6886',fontSize:11},
-          scale:true,min:function(v){return Math.floor(v.min-1);},max:function(v){return Math.ceil(v.max+1);},
-          splitLine:{lineStyle:{color:'rgba(120,150,200,.08)'}},axisLabel:{color:'#5a6886',fontSize:11}},
-        {type:'value',name:'%',nameTextStyle:{color:'#5a6886',fontSize:11},
-          min:0,max:100,splitLine:{show:false},axisLabel:{color:'#5a6886',fontSize:11}}
-      ],
-      series:[
-        {name:'温度',type:'line',data:temps,yAxisIndex:0,smooth:true,symbol:'none',
-          lineStyle:{width:2.6,color:'#ff8a7a'},
-          itemStyle:{color:'#ff8a7a'},
-          areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
-            {offset:0,color:'rgba(255,138,122,.22)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
-        {name:'湿度',type:'line',data:hums,yAxisIndex:1,smooth:true,symbol:'none',
-          lineStyle:{width:2,color:'#5fb8ff'},itemStyle:{color:'#5fb8ff'}}
-      ]
-    },true);
-    firstRun=false;
-  }
+function renderChart(points){
+  var times=points.map(x=>fmtClock(x.t)), temps=points.map(x=>x.temp), hums=points.map(x=>x.hum);
+  chart.setOption({
+    backgroundColor:'transparent', animation:firstRun,
+    grid:{left:44,right:48,top:16,bottom:22},
+    tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(34,211,238,.3)',
+      textStyle:{color:'#e8f0ff',fontSize:12},
+      formatter:function(ps){var h=ps[0]||ps[1];if(!h)return'';
+        var d=new Date(h.axisValue*1000||h.name+'.000'); // 容错
+        var t=ps.find(s=>s.seriesName==='温度'),u=ps.find(s=>s.seriesName==='湿度');
+        var out='<b style="color:#9fd8ff">'+(t&&t.name||'')+'</b>';
+        if(t)out+='<br>🌡 温度 <b style="color:#ff8a7a">'+t.value+'</b> ℃';
+        if(u)out+='<br>💧 湿度 <b style="color:#38bdf8">'+u.value+'</b> %';
+        return out;}},
+    legend:{data:['温度','湿度'],top:0,right:4,itemWidth:14,itemHeight:3,textStyle:{color:'#7d8db0',fontSize:11}},
+    xAxis:{type:'category',data:times,boundaryGap:false,
+      axisLine:{lineStyle:{color:'rgba(90,140,255,.18)'}},axisLabel:{color:'#4a5678',fontSize:10.5},axisTick:{show:false}},
+    yAxis:[
+      {type:'value',name:'℃',nameTextStyle:{color:'#4a5678',fontSize:10},scale:true,
+        splitLine:{lineStyle:{color:'rgba(90,140,255,.07)'}},axisLabel:{color:'#4a5678',fontSize:10.5}},
+      {type:'value',name:'%',nameTextStyle:{color:'#4a5678',fontSize:10},min:0,max:100,
+        splitLine:{show:false},axisLabel:{color:'#4a5678',fontSize:10.5}}
+    ],
+    series:[
+      {name:'温度',type:'line',data:temps,yAxisIndex:0,smooth:true,symbol:'circle',symbolSize:3,
+        lineStyle:{width:2.4,color:'#ff8a7a',shadowBlur:12,shadowColor:'rgba(255,138,122,.5)'},
+        itemStyle:{color:'#ff8a7a'},
+        areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
+          {offset:0,color:'rgba(255,138,122,.22)'},{offset:1,color:'rgba(255,138,122,0)'}]}}},
+      {name:'湿度',type:'line',data:hums,yAxisIndex:1,smooth:true,symbol:'none',
+        lineStyle:{width:1.6,color:'#38bdf8',shadowBlur:8,shadowColor:'rgba(56,189,248,.4)'},
+        itemStyle:{color:'#38bdf8'}}
+    ]
+  },true);
+  firstRun=false;
+}
 
-  function render(s){
-    var st=s.status;
-    document.getElementById('dot').className='dot '+dotType(st);
-    document.getElementById('statusText').textContent=
-      statusMap(st)+(s.rssi? ' · '+s.rssi+'dBm':'');
-    if(s.last){
-      document.getElementById('curTemp').textContent=s.last.temp.toFixed(1);
-      document.getElementById('curHum').textContent=s.last.hum;
-      document.getElementById('curVolt').textContent=s.last.volt.toFixed(2);
-      document.getElementById('bigMeta').textContent=
-        '最近 '+s.last.ts+' 更新 · 本次断电找回 '+s.lost+' 次'+(s.connected?'':' · 等待连接');
-    } else {
-      document.getElementById('curTemp').textContent='--';
-      document.getElementById('curHum').textContent='--';
-      document.getElementById('curVolt').textContent='--';
-      document.getElementById('bigMeta').textContent='等待首条记录…';
+function renderWeek(data){
+  weekChart.setOption({
+    backgroundColor:'transparent',animation:true,grid:{left:30,right:6,top:10,bottom:22},
+    xAxis:{type:'category',data:data.map(d=>d.day.slice(5)).map(d=>d.replace(/^0/,'')),
+      axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#4a5678',fontSize:9.5},axisTick:{show:false}},
+    yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#4a5678',fontSize:9}},
+    tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
+      textStyle:{color:'#e8f0ff',fontSize:11},
+      formatter:function(ps){var d=data[ps[0].dataIndex];if(!d)return'';
+        return d.day+' 日均 <b style="color:#34d399">'+(d.avg!=null?d.avg:'无数据')+'</b> ℃（'+d.count+'条）'}},
+    series:[{type:'bar',data:data.map(d=>d.avg),barWidth:'55%',itemStyle:{borderRadius:[5,5,0,0],
+      color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
+        {offset:0,color:'rgba(52,211,153,.9)'},{offset:1,color:'rgba(34,211,238,.25)'}]}}}]},true);
+  var avgs=data.filter(d=>d.avg!=null).map(d=>d.avg);
+  if(avgs.length){var a=avgs.reduce((x,y)=>x+y,0)/avgs.length;
+    document.getElementById('weekAvg').textContent=a.toFixed(1)+' ℃';
+    document.getElementById('weekNote').textContent=avgs.length+'天有记录 · 共'+data.reduce((x,d)=>x+d.count,0)+'条'}
+}
+
+function mergeLive(points){
+  if(CUR_DAY!==(window.TODAY)) return points;   // 只看历史日时不加实时
+  var live=window.LIVE||[];
+  if(!live.length) return points;
+  var map={}; var out=points.slice();
+  var lastT = out.length? out[out.length-1].t : 0;
+  live.forEach(x=>{ if(x.t>lastT) out.push(x); });
+  return out;
+}
+
+async function loadDay(day){
+  CUR_DAY=day;
+  document.getElementById('chartDay').textContent=day;
+  DAY_POINTS=await pywebview.api.get_day(day);
+  var stats=await pywebview.api.get_day_stats(day);
+  renderDayStats(stats);
+  renderChart(mergeLive(DAY_POINTS));
+}
+
+function renderDayStats(st){
+  var e=function(id,v){document.getElementById(id).textContent=v};
+  if(!st){e('ttHigh','--');e('ttHighAt','--');e('ttLowAt','--');e('hhRange','--');
+    e('hhAvg','--');e('hhDiff','--');e('dayCount','0');e('dayCountNote','今日暂无记录');return}
+  e('ttHigh',st.tmax); e('ttHighAt',st.tmax_at); e('ttLowAt',st.tmin_at);
+  e('hhRange',(st.hmax)+'–'+(st.hmin)); e('hhAvg',st.havg); e('hhDiff',(st.hmax-st.hmin).toFixed(1));
+  e('dayCount',st.count); e('dayCountNote','含实时 · '+st.count+'条记录');
+  document.getElementById('ttAvg').textContent=st.avg;
+}
+
+function renderLive(sn){
+  document.getElementById('dot').className='dot '+dotType(sn.status);
+  document.getElementById('statusText').textContent=statusMap(sn.status);
+  if(sn.last){
+    var l=sn.last;
+    document.getElementById('curTemp').textContent=l.temp.toFixed(1);
+    document.getElementById('curHum').textContent=l.hum;
+    document.getElementById('curVolt').textContent=l.volt.toFixed(2);
+    // 舒适度
+    var f,txt;
+    if(l.temp>=18&&l.temp<=26&&l.hum>=40&&l.hum<=65){f='😊';txt='舒适惬意'}
+    else if(l.temp>26){f='🥵';txt='有点热';}
+    else if(l.temp<18){f='🥶';txt='有点冷';}
+    else if(l.hum<40){f='🏜️';txt='偏干燥';}
+    else{f='💦';txt='偏潮湿';}
+    document.getElementById('face').textContent=f;
+    document.getElementById('comfyText').textContent=l.ts+' · '+txt;
+    // 信号
+    var sig=document.getElementById('sigbar');
+    if(sn.rssi!=null||sn.addr){
+      var r=sn.rssi;
+      var lv = r==null?2:(r>-60?4:(r>-75?3:(r>-90?2:1)));
+      sig.className='sig l'+lv;
+      sig.innerHTML='<i></i><i></i><i></i><i></i>';
+      document.getElementById('sigText').textContent= r!=null?(r+' dBm'):'已连接';
+    } else { sig.className='sig'; sig.innerHTML=''; document.getElementById('sigText').textContent='--'; }
+    document.getElementById('latency').textContent=sn.read_ms!=null?sn.read_ms:'--';
+    document.getElementById('uptime').textContent=fmtDur(sn.uptime);
+    document.getElementById('runCount').textContent=sn.count||0;
+  }
+}
+
+async function poll(){
+  try{
+    var sn=await pywebview.api.get_snapshot();
+    renderLive(sn);
+    if(window.TODAY && CUR_DAY===window.TODAY && sn.last){
+      // 实时点追加
+      renderChart(mergeLive(DAY_POINTS));
+      var st=await pywebview.api.get_day_stats(window.TODAY);
+      renderDayStats(st);
     }
-    // 运行时长
-    document.getElementById('uptime').textContent=fmtDur(s.uptime)||'--';
-    // 统计
-    if(s.temp_stat){
-      var ts=s.temp_stat,hs=s.hum_stat;
-      document.getElementById('tempStatVal').textContent=ts.avg+' ℃';
-      document.getElementById('tAvg').textContent=ts.avg;
-      document.getElementById('tMax').textContent=ts.max;
-      document.getElementById('tMin').textContent=ts.min;
-      document.getElementById('humStatVal').textContent=hs.avg+' %';
-      document.getElementById('hAvg').textContent=hs.avg;
-      document.getElementById('hMax').textContent=hs.max;
-      document.getElementById('hMin').textContent=hs.min;
-    }
-    // 电池
-    var vc=s.last?s.last.volt:0;
-    document.getElementById('battVal').textContent=vc?vc.toFixed(2)+' V':'--';
-    document.getElementById('battHint').textContent=
-      vc>=3.0?'电量充足 · CR2450':(vc>=2.7?'电量偏低':'请更换电池');
-    document.getElementById('countVal').textContent=s.count||0;
-    document.getElementById('lastRec').textContent = s.last?('最近 '+s.last.ts):'等待数据';
-    if(s.csv) document.getElementById('csvPath').textContent='保存到 '+s.csv;
-    if(s.history&&s.history.length) renderChart(s.history);
-    else if(firstRun) renderChart([]);
+  }catch(e){}
+}
+async function rescan(){try{await pywebview.api.reconnect()}catch(e){}}
+
+async function buildDays(){
+  var days=await pywebview.api.get_days();
+  var todayStr=new Date(); todayStr=todayStr.getFullYear()+'-'+p(todayStr.getMonth()+1)+'-'+p(todayStr.getDate());
+  window.TODAY=todayStr;
+  var bar=document.getElementById('daysBar');
+  bar.innerHTML='';
+  // 今天&昨天&近5天(存在时)
+  var cand=[todayStr];
+  for(var i=1;i<=6;i++){
+    var d=new Date(); d.setDate(d.getDate()-i);
+    var s=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+    cand.push(s);
   }
-
-  async function poll(){ try{ render(await pywebview.api.get_snapshot()); }catch(e){console.error(e);} }
-  async function rescan(){ try{ await pywebview.api.reconnect(); }catch(e){} }
-
-  document.getElementById('intervalSel').addEventListener('change',async function(){
-    try{ await pywebview.api.set_interval(Number(this.value)); }catch(e){}
+  var btns=[];
+  cand.forEach(function(day){
+    var has=days.indexOf(day)>=0;
+    var b=document.createElement('div');
+    b.className='daybtn';
+    b.textContent= day===todayStr?'今天 · '+fmtDay(day) : fmtDay(day)+(has?'':'·无');
+    b.style.opacity=has?1:.45;
+    b.onclick=async function(){
+      btns.forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      await loadDay(day);
+    };
+    bar.appendChild(b); btns.push(b);
   });
-  window.addEventListener('resize',()=>chart.resize());
-  setInterval(()=>{var d=new Date();document.getElementById('clock').textContent=
-    p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
-    document.getElementById('date').textContent=
-      d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+
-      '日一二三四五六'[d.getDay()];},1000);
+  // 指标chips
+  var chips=document.createElement('div');chips.className='metachips';
+  chips.innerHTML='<span class="chip">MAC <b id="chMac">--</b></span>'+
+    '<span class="chip">版本 <b>v1.2</b></span>';
+  bar.appendChild(chips);
+  // 默认加载今天; 今天没数据则加载最近有记录的一天
+  var load = days.length ? (days.indexOf(todayStr) >= 0 ? todayStr : days[0]) : todayStr;
+  var li=cand.indexOf(load); if(li>=0){btns[li].classList.add('on');}
+  await loadDay(load);
+  var weekData=await pywebview.api.get_week();
+  renderWeek(weekData);
+  // 轮询取MAC
+  try{var sn=await pywebview.api.get_snapshot();if(sn.addr)document.getElementById('chMac').textContent=sn.addr.slice(0,8)+'…'}catch(e){}
+}
 
-  (async function init(){
-    try{ await pywebview.api.start(); }catch(e){}
-    setInterval(poll,1000); poll();
-  })();
+document.getElementById('intervalSel').addEventListener('change',async function(){
+  try{await pywebview.api.set_interval(Number(this.value))}catch(e){}});
+window.addEventListener('resize',()=>{chart.resize();weekChart.resize()});
+setInterval(()=>{var d=new Date();document.getElementById('clock').textContent=
+  p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  document.getElementById('date').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+'日一二三四五六'[d.getDay()];},1000);
+
+(async function init(){
+  try{await pywebview.api.start()}catch(e){}
+  try{window.LIVE=await pywebview.api.get_live()}catch(e){window.LIVE=[]}
+  setInterval(poll,1000);
+  await buildDays();
+  poll();
+})();
 </script>
 </body>
 </html>
