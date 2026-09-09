@@ -8,7 +8,7 @@
 - 保持连接期间持续订阅notify+主动读取(保活)
 - 连接存活时间统计
 """
-import csv, datetime, os, threading, time, asyncio
+import csv, datetime, os, threading, time, asyncio, collections
 from bleak import BleakScanner, BleakClient
 from paths import data_dir, load_saved_mac, save_mac
 
@@ -35,11 +35,15 @@ class Sensor(threading.Thread):
         self._lock = threading.Lock()
         self._csv_path = None
         self._csv_day = None
+        self._ms_hist = collections.deque(maxlen=600)   # 延迟毫秒历史
+        self._ever_connected = False                    # 本次进程是否曾连上
 
     # ---------- 状态读取(供UI轮询) ----------
     def snapshot(self):
         with self._lock:
-            return dict(self._state)
+            st = dict(self._state)
+            st["ms_hist"] = list(self._ms_hist)
+            return st
 
     def set_interval(self, seconds):
         self.interval = max(1.0, float(seconds))
@@ -64,7 +68,14 @@ class Sensor(threading.Thread):
                 break
             except Exception as e:
                 self._log(f"会话异常: {e}")
+            if self._stop.is_set():
+                return
+            was_connected = self._ever_connected
             self._set(connected=False, status="reconnecting")
+            # 掉线找回计数: 曾连上过但现在掉线 -> lost+1
+            if was_connected:
+                with self._lock:
+                    self._state["lost"] = self._state.get("lost", 0) + 1
             # 快速重连(共30秒, 0.5s粒度)
             for _ in range(60):
                 if self._stop.is_set():
@@ -145,6 +156,7 @@ class Sensor(threading.Thread):
         self._log(f"连接建立 {addr}")
         session_start = datetime.datetime.now()
         async with BleakClient(addr, timeout=20.0) as client:
+            self._ever_connected = True
             self._set(connected=True, status="connected",
                       session_start=session_start.strftime("%H:%M:%S"))
             self._log("已连接! 开始持续采集 (断开后会自动找回)")
@@ -169,8 +181,10 @@ class Sensor(threading.Thread):
                     got = parse(bytes(raw))
                     if got:
                         v = got
+                    _ms = int((time.perf_counter() - t0) * 1000)
                     with self._lock:
-                        self._state["read_ms"] = int((time.perf_counter() - t0) * 1000)
+                        self._state["read_ms"] = _ms
+                    self._ms_hist.append({"_t": time.time(), "_v": _ms})
                 except Exception:
                     if not client.is_connected:
                         break

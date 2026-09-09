@@ -65,6 +65,7 @@ class Api:
             "interval": self.sensor.interval,
             "uptime": uptime,
             "csv": st.get("csv"),
+            "ms_hist": st.get("ms_hist", []),
         }
 
     def get_days(self):
@@ -121,6 +122,14 @@ class Api:
     def get_range_stats(self, days):
         pts = self.get_range(days)
         return hist.day_stats(pts)
+
+    def get_hours(self, n=24):
+        """真·最近n小时的全部点(跨天裁剪正确): 基于当前时间回退n小时"""
+        now = datetime.datetime.now()
+        start_ts = now.timestamp() - n * 3600
+        # 取覆盖期的天数(近2天足够跨零点)
+        pts = self.get_range(3)
+        return [x for x in pts if x["t"] >= start_ts - 1]  # -1s容差
 
     def get_between(self, start, end):
         """自定义起止日期间的全部记录点(含首尾)"""
