@@ -64,9 +64,9 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 .col-left{width:clamp(170px, 21vw, 250px);flex:none;display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto}
 .tempcard{padding:14px 18px;flex:none;min-height:clamp(170px, 30vh, 240px);display:flex;flex-direction:column;justify-content:center;gap:7px;overflow:visible}
 .tclabel{font-size:11px;color:var(--faint);letter-spacing:2px;flex:none;line-height:1}
-.tcbig{display:flex;align-items:baseline;gap:6px;flex:none;white-space:nowrap;line-height:1}
-.tcbig .v{font-size:62px;font-weight:300;line-height:1.15;font-variant-numeric:tabular-nums}
-.tcbig .u{font-size:22px;color:var(--dim);line-height:1.15}
+.tcbig{display:flex;align-items:baseline;gap:6px;flex:none;white-space:nowrap;line-height:1;overflow:visible}
+.tcbig .v{font-size:54px;font-weight:300;line-height:1.35;font-variant-numeric:tabular-nums}
+.tcbig .u{font-size:20px;color:var(--dim);line-height:1.35}
 .tcface{font-size:24px;flex:none}
 .tccomfy{font-size:11px;color:var(--dim);flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -100,10 +100,11 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
 }
 .statgrid{flex:0 0 52%;padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:0}
 .statcell{display:flex;flex-direction:column;justify-content:center;padding:6px 10px;
-  background:rgba(10,18,34,.5);border:1px solid var(--line);border-radius:10px}
-.statcell .sl{font-size:10px;color:var(--faint)}
-.statcell .sv{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
-.statcell .ss{margin-top:1px;font-size:9.5px;color:var(--faint)}
+  background:rgba(10,18,34,.5);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.statcell .sl{font-size:10px;color:var(--faint);line-height:1.2}
+.statcell .svbox{display:flex;align-items:baseline;gap:2px;margin-top:2px;white-space:nowrap;line-height:1}
+.statcell .sv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.statcell .ss{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;line-height:1}
 .msbox{padding:10px 12px;flex:1;min-height:0;position:relative}
 .msbox .msnow{font-size:12px;color:var(--violet);margin-left:6px}
 .mschart{position:absolute;top:26px;left:8px;right:8px;bottom:6px}
@@ -212,14 +213,14 @@ select{background:rgba(12,20,36,.8);color:var(--text);border:1px solid var(--lin
     <!-- 右: 统计 + 延迟曲线 -->
     <div class="col-right">
       <div class="panel statgrid">
-        <div class="statcell"><span class="sl">平均温度</span><span class="sv" id="stAvg" style="color:var(--temp)">--</span><span class="ss">℃</span></div>
-        <div class="statcell"><span class="sl">温度极差</span><span class="sv" id="stRange">--</span><span class="ss">℃</span></div>
-        <div class="statcell"><span class="sl">平均湿度</span><span class="sv" id="stHavg" style="color:var(--hum)">--</span><span class="ss">%</span></div>
-        <div class="statcell"><span class="sl">湿度极差</span><span class="sv" id="stHdiff">--</span><span class="ss">%</span></div>
-        <div class="statcell"><span class="sl">最高 · 时刻</span><span class="sv" id="stMax" style="color:var(--temp)">--</span><span class="ss" id="stMaxAt">℃</span></div>
-        <div class="statcell"><span class="sl">最低 · 时刻</span><span class="sv" id="stMin" style="color:var(--hum)">--</span><span class="ss" id="stMinAt">℃</span></div>
-        <div class="statcell"><span class="sl">样本数</span><span class="sv" id="stN">--</span><span class="ss">条</span></div>
-        <div class="statcell"><span class="sl">活跃天数</span><span class="sv" id="stDays">--</span><span class="ss">天</span></div>
+        <div class="statcell"><span class="sl">平均温度</span><span class="svbox"><span class="sv" id="stAvg" style="color:var(--temp)">--</span><span class="ss">℃</span></span></div>
+        <div class="statcell"><span class="sl">温度极差</span><span class="svbox"><span class="sv" id="stRange">--</span><span class="ss">℃</span></span></div>
+        <div class="statcell"><span class="sl">平均湿度</span><span class="svbox"><span class="sv" id="stHavg" style="color:var(--hum)">--</span><span class="ss">%</span></span></div>
+        <div class="statcell"><span class="sl">湿度极差</span><span class="svbox"><span class="sv" id="stHdiff">--</span><span class="ss">%</span></span></div>
+        <div class="statcell"><span class="sl">最高 · 时刻</span><span class="svbox"><span class="sv" id="stMax" style="color:var(--temp)">--</span><span class="ss" id="stMaxAt">℃</span></span></div>
+        <div class="statcell"><span class="sl">最低 · 时刻</span><span class="svbox"><span class="sv" id="stMin" style="color:var(--hum)">--</span><span class="ss" id="stMinAt">℃</span></span></div>
+        <div class="statcell"><span class="sl">样本数</span><span class="svbox"><span class="sv" id="stN">--</span><span class="ss">条</span></span></div>
+        <div class="statcell"><span class="sl">活跃天数</span><span class="svbox"><span class="sv" id="stDays">--</span><span class="ss">天</span></span></div>
       </div>
       <div class="panel msbox">
         <div class="wdtitle"><span class="bar"></span>蓝牙延迟<span class="msnow" id="msNow">--ms</span></div>
@@ -294,7 +295,9 @@ window.addEventListener('unhandledrejection', function(e){ window.__errs.push('r
 function err(tag, e){ try{ window.__errs.push(tag+':'+String(e && e.message || e)); }catch(_){} }
 
 var EC = {};
-var curRange = localStorage.getItem('thm_range_v2') || '1h';   // 默认近1小时(新key避免旧记忆)
+// 默认近1小时; live(本次运行)不记忆为默认, 避免重启后空页
+var savedRange = localStorage.getItem('thm_range_v2');
+var curRange = (savedRange && savedRange!=='live') ? savedRange : '1h';
 var custStart = null, custEnd = null, firstRun = true;
 var RANGE_POINTS = [];
 window.__lastTs = null;
@@ -325,7 +328,9 @@ function setRange(el){
   document.querySelectorAll('.rangebtn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   curRange=el.dataset.r;
-  try{ localStorage.setItem('thm_range_v2', curRange); }catch(e){}
+  // live(本次运行)只在本次会话有效, 不记忆为默认
+  if(curRange!=='live'){ try{ localStorage.setItem('thm_range_v2', curRange); }catch(e){} }
+  else { try{ localStorage.removeItem('thm_range_v2'); }catch(e){} }
   if(curRange==='custom'){document.getElementById('custWrap').classList.remove('hidden')}
   else{document.getElementById('custWrap').classList.add('hidden');custStart=null;custEnd=null}
   refreshAll();
