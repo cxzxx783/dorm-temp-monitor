@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>宿舍温湿度管家</title>
-<script src="assets/echarts.min.js"></script>
 <style>
 :root{
   --bg:#0b1120; --text:#e8eefb; --dim:#9aa7c6; --faint:#6b7d9e;
@@ -537,7 +536,7 @@ function drawWeekCharts(){
         backgroundColor:'transparent',animation:true,grid:{left:32,right:8,top:10,bottom:22},
         xAxis:{type:'category',data:week.map(d=>d.day.replace(/^0/,'').replace('-','/')),
           axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},axisLabel:{color:'#7d8db0',fontSize:9},axisTick:{show:false}},
-        yAxis:{type:'value',min:15,max:35,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
+        yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
         tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(139,92,246,.3)',
           textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){var d=week[ps[0].dataIndex];
             return d.day+' 日均 <b style="color:#34d399">'+(d.avg!=null?d.avg:'无')+'</b> ℃（'+d.count+'条）'}},
@@ -555,7 +554,7 @@ function drawWeekCharts(){
       backgroundColor:'transparent',grid:{left:32,right:8,top:10,bottom:22},
       xAxis:{type:'category',data:labels,axisLine:{lineStyle:{color:'rgba(90,140,255,.15)'}},
         axisLabel:{color:'#7d8db0',fontSize:10,interval:'auto'},axisTick:{show:false}},
-      yAxis:{type:'value',min:15,max:35,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
+      yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:'rgba(90,140,255,.06)'}},axisLabel:{color:'#7d8db0',fontSize:10}},
       tooltip:{trigger:'axis',backgroundColor:'rgba(10,16,34,.92)',borderColor:'rgba(34,211,238,.3)',
         textStyle:{color:'#e8f0ff',fontSize:10},formatter:function(ps){return ps[0].name+' <b style="color:#ff8a7a">'+ps[0].value+'</b> ℃'}},
       series:[{type:'line',data:temps,smooth:true,symbol:'none',

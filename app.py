@@ -136,8 +136,9 @@ class Api:
         """真·最近n小时的全部点(跨天裁剪正确): 基于当前时间回退n小时"""
         now = datetime.datetime.now()
         start_ts = now.timestamp() - n * 3600
-        # 取覆盖期的天数(近2天足够跨零点)
-        pts = self.get_range(3)
+        # 覆盖天数随请求时长动态计算(自定义最长120小时, 不能再硬编码3天)
+        days = min(31, int(n // 24) + 2)   # +2 覆盖跨零点边界
+        pts = self.get_range(days)
         return [x for x in pts if x["t"] >= start_ts - 1]  # -1s容差
 
     def get_between(self, start, end):
