@@ -33,11 +33,13 @@ def _key_for(log_dir, day):
 
 def _list_cache(log_dir):
     key = ("days", log_dir)
-    days = None
     # 目录是否有新文件: 用目录mtime不行, 直接扫描(glob很快)
     files = glob.glob(os.path.join(log_dir, "temp_log_*.csv"))
+    # 缓存有效性按"文件名集合"判断, 不能只按数量——
+    # 删一个旧文件+增一个新文件时数量不变, 只比数量会返回过期列表
+    fingerprint = tuple(sorted(files))
     entry = _cache.get(key)
-    if entry and entry[0] == len(files):
+    if entry and entry[0] == fingerprint:
         return entry[1]
     days = []
     for f in files:
@@ -49,7 +51,7 @@ def _list_cache(log_dir):
         except Exception:
             continue
     days.sort(reverse=True)
-    _cache[key] = (len(files), days)
+    _cache[key] = (fingerprint, days)
     return days
 
 def list_days(log_dir):
